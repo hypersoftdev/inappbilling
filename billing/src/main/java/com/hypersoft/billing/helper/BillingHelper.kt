@@ -79,10 +79,11 @@ abstract class BillingHelper(private val activity: Activity) {
                 if (isBillingReady) {
                     setBillingState(BillingState.CONNECTION_ESTABLISHED)
                     queryForAvailableProducts()
+                    Handler(Looper.getMainLooper()).post { callback.invoke(true, BillingState.CONNECTION_ESTABLISHED.message) }
                 } else {
                     setBillingState(BillingState.CONNECTION_FAILED)
+                    Handler(Looper.getMainLooper()).post { callback.invoke(false, billingResult.debugMessage) }
                 }
-                Handler(Looper.getMainLooper()).post { callback.invoke(isBillingReady, billingResult.debugMessage) }
             }
         })
     }
@@ -131,6 +132,11 @@ abstract class BillingHelper(private val activity: Activity) {
     }
 
     private fun checkValidations(callback: (isPurchased: Boolean, message: String) -> Unit): Boolean {
+        if (getBillingState() == BillingState.NO_INTERNET_CONNECTION) {
+            callback.invoke(false, getBillingState().message)
+            return true
+        }
+
         if (getBillingState() == BillingState.EMPTY_PRODUCT_ID_LIST) {
             callback.invoke(false, getBillingState().message)
             return true

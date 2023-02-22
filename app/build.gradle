@@ -33,7 +33,6 @@ android {
 }
 
 dependencies {
-    implementation project(path: ':billing')
 
     implementation 'androidx.core:core-ktx:1.7.0'
     implementation 'androidx.appcompat:appcompat:1.5.1'
@@ -43,6 +42,7 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.4'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.0'
 
-    // SonicInApp Library
-    // implementation 'com.github.hypersoftdev:inappbilling:1.0.1'
+    // Billing Library
+     implementation 'com.github.hypersoftdev:inappbilling:1.1.4'
+//    implementation project(path: ':billing')
 }

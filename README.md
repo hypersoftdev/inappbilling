@@ -1,4 +1,4 @@
-[![](https://jitpack.io/v/orbitalsonic/SonicInApp.svg)](https://jitpack.io/#orbitalsonic/SonicInApp)
+[![](https://jitpack.io/v/hypersoftdev/inappbilling.svg)](https://jitpack.io/#hypersoftdev/inappbilling)
 # SonicInApp
 
 SonicInApp is a [Google Play Billing](https://developer.android.com/google/play/billing/integrate) library that demonstrates InApp purchase in your Android application
@@ -21,7 +21,7 @@ Add maven repository in project level build.gradle or in latest project setting.
 Add SonicInApp dependencies in App level build.gradle.
 ```
     dependencies {
-             implementation 'com.github.hypersoftdev:inappbilling:1.0.1'
+             implementation 'com.github.hypersoftdev:inappbilling:1.1.4'
     }
 ```  
 

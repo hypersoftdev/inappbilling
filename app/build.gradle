@@ -11,8 +11,8 @@ android {
         applicationId "com.hypersoft.inappbilling"
         minSdk 23
         targetSdk 33
-        versionCode 4
-        versionName "1.1.4"
+        versionCode 5
+        versionName "1.1.5"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -43,6 +43,6 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.0'
 
     // Billing Library
-//     implementation 'com.github.hypersoftdev:inappbilling:1.1.4'
+//     implementation 'com.github.hypersoftdev:inappbilling:1.1.5'
     implementation project(path: ':billing')
 }

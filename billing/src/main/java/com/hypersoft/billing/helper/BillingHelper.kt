@@ -104,6 +104,7 @@ abstract class BillingHelper(private val activity: Activity) {
             } else {
                 dpProvider.setProductDetailsList(productDetailsResult.productDetailsList!!)
                 setBillingState(BillingState.CONSOLE_PRODUCTS_AVAILABLE)
+                Log.d(TAG, "queryForAvailableProducts: autoPurchase$autoPurchase purchaseCallback $purchaseCallback")
                 if (autoPurchase && purchaseCallback != null) {
                     purchase(purchaseCallback!!)
                 }
@@ -248,13 +249,17 @@ abstract class BillingHelper(private val activity: Activity) {
 
     private val isInternetConnected: Boolean
         get() {
-            val network = connectivityManager.activeNetwork ?: return false
-            val networkCapabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-            return when {
-                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
-                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
-                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
-                else -> false
+            try {
+                val network = connectivityManager.activeNetwork ?: return false
+                val networkCapabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+                return when {
+                    networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+                    networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+                    networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
+                    else -> false
+                }
+            } catch (ex: Exception) {
+                return false
             }
         }
 

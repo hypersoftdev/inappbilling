@@ -29,6 +29,9 @@ object State {
             BillingState.CONNECTION_ESTABLISHED -> BillingState.CONNECTION_ESTABLISHED.message
             BillingState.CONNECTION_FAILED -> BillingState.CONNECTION_FAILED.message
             BillingState.FEATURE_NOT_SUPPORTED -> BillingState.FEATURE_NOT_SUPPORTED.message
+            BillingState.CONSOLE_OLD_PRODUCTS_FETCHING -> BillingState.CONSOLE_OLD_PRODUCTS_FETCHING.message
+            BillingState.CONSOLE_OLD_PRODUCTS_NOT_FOUND -> BillingState.CONSOLE_OLD_PRODUCTS_NOT_FOUND.message
+            BillingState.CONSOLE_OLD_PRODUCTS_OWNED -> BillingState.CONSOLE_OLD_PRODUCTS_OWNED.message
             BillingState.CONSOLE_PRODUCTS_FETCHING -> BillingState.CONSOLE_PRODUCTS_FETCHING.message
             BillingState.CONSOLE_PRODUCTS_FETCHED_SUCCESSFULLY -> BillingState.CONSOLE_PRODUCTS_FETCHED_SUCCESSFULLY.message
             BillingState.CONSOLE_PRODUCTS_FETCHING_FAILED -> BillingState.CONSOLE_PRODUCTS_FETCHING_FAILED.message

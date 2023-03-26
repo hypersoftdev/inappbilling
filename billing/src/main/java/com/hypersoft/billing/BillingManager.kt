@@ -9,7 +9,7 @@ import com.hypersoft.billing.helper.BillingHelper
  */
 class BillingManager(private val activity: Activity) : BillingHelper(activity) {
 
-    override fun startConnection(productIdsList: List<String>, callback: (connectionResult: Boolean, message: String) -> Unit) = startBillingConnection(productIdsList = productIdsList, autoPurchase = false, callback = callback)
+    override fun startConnection(productIdsList: List<String>, callback: (connectionResult: Boolean,alreadyPurchased: Boolean, message: String) -> Unit) = startBillingConnection(productIdsList = productIdsList, autoPurchase = false, callback = callback)
 
     fun makePurchase(callback: (isPurchased: Boolean, message: String) -> Unit) = purchase(callback)
 

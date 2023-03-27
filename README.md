@@ -21,13 +21,13 @@ Add maven repository in project level build.gradle or in latest project setting.
 Add inappbilling dependencies in App level build.gradle.
 ```
     dependencies {
-             implementation 'com.github.hypersoftdev:inappbilling:1.1.5'
+             implementation 'com.github.hypersoftdev:inappbilling:1.1.6'
     }
 ```  
 
 ### Step 3
 
-Declare BillingManger Variable, "this" parameter Must be a reference of an Activity
+Declare BillingManger Variable, "this" can be of Application Context
 
 also declare your original productId
 
@@ -41,13 +41,19 @@ also declare your original productId
 Get debugging ids for testing using "getDebugProductIDList()" method
 
 ```
- if (BuildConfig.DEBUG) {
-            billingManager.startConnection(billingManager.getDebugProductIDList()){ isConnectionEstablished, message ->
-                Log.d("BillingManager", message)
+    if (BuildConfig.DEBUG) {
+            billingManager.startConnection(billingManager.getDebugProductIDList()) { isConnectionEstablished, alreadyPurchased, message ->
+                showMessage(message)
+                if (alreadyPurchased) {
+                    // Save settings for purchased product
+                }
             }
         } else {
-            billingManager.startConnection(listOf(productId)) { isConnectionEstablished, message ->
-                Log.d("BillingManager", message)
+            billingManager.startConnection(listOf(productId)) { isConnectionEstablished, alreadyPurchased, message ->
+                showMessage(message)
+                if (alreadyPurchased) {
+                    // Save settings for purchased product
+                }
             }
         }
 
@@ -63,10 +69,31 @@ State.billingState.observe(this) {
 ```
 #### Purchasing InApp
 
+"this" parameter Must be a reference of an Activity
+
 ```
-billingManager.makePurchase { isSuccess, message ->
-            Log.d("BillingManager", message)
+   billingManager.makePurchase(this) { isSuccess, message ->
+            showMessage(message)
         }
+```
+
+#### Old Purchase
+
+```
+    if (BuildConfig.DEBUG) {
+            billingManager.startOldPurchaseConnection(billingManager.getDebugProductIDList()) { isConnectionEstablished, alreadyPurchased, message ->
+                if (alreadyPurchased) {
+                    // Save settings for purchased product
+                }
+            }
+        } else {
+            billingManager.startOldPurchaseConnection(listOf(productId)) { isConnectionEstablished, alreadyPurchased, message ->
+                if (alreadyPurchased) {
+                    // Save settings for purchased product
+                }
+            }
+        }
+
 ```
 
 #### Note

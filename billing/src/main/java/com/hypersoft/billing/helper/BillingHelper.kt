@@ -44,6 +44,9 @@ abstract class BillingHelper(private val context: Context) {
 
     abstract fun startConnection(productIdsList: List<String>, callback: (connectionResult: Boolean,alreadyPurchased: Boolean, message: String) -> Unit)
 
+    abstract fun startOldPurchaseConnection(productIdsList: List<String>, callback: (connectionResult: Boolean,alreadyPurchased: Boolean, message: String) -> Unit)
+
+
     /**
      *  Get a single testing product_id ("android.test.purchased")
      */
@@ -54,7 +57,49 @@ abstract class BillingHelper(private val context: Context) {
      */
     fun getDebugProductIDsList() = dpProvider.getDebugProductIDsList()
 
-    protected fun startBillingConnection(productIdsList: List<String>, autoPurchase: Boolean = false, callback: (connectionResult: Boolean, alreadyPurchased: Boolean,message: String) -> Unit) {
+    protected fun startBillingConnection(productIdsList: List<String>, callback: (connectionResult: Boolean, alreadyPurchased: Boolean,message: String) -> Unit) {
+        connectionCallback = callback
+        if (productIdsList.isEmpty()) {
+            setBillingState(BillingState.EMPTY_PRODUCT_ID_LIST)
+            callback.invoke(false,false, BillingState.EMPTY_PRODUCT_ID_LIST.message)
+            return
+        }
+        dpProvider.setProductIdsList(productIdsList)
+
+        if (!isInternetConnected) {
+            setBillingState(BillingState.NO_INTERNET_CONNECTION)
+            callback.invoke(false,false, BillingState.NO_INTERNET_CONNECTION.message)
+            return
+        }
+
+        setBillingState(BillingState.CONNECTION_ESTABLISHING)
+        if (billingClient.isReady){
+            setBillingState(BillingState.CONNECTION_ESTABLISHED)
+            Handler(Looper.getMainLooper()).post { callback.invoke(true, false,  BillingState.CONNECTION_ESTABLISHED.message) }
+            queryForAvailableProducts()
+        }else{
+            billingClient.startConnection(object : BillingClientStateListener {
+                override fun onBillingServiceDisconnected() {
+                    setBillingState(BillingState.CONNECTION_DISCONNECTED)
+                    Handler(Looper.getMainLooper()).post { callback.invoke(false,false, BillingState.CONNECTION_DISCONNECTED.message) }
+                }
+
+                override fun onBillingSetupFinished(billingResult: BillingResult) {
+                    val isBillingReady = billingResult.responseCode == BillingClient.BillingResponseCode.OK
+                    if (isBillingReady) {
+                        setBillingState(BillingState.CONNECTION_ESTABLISHED)
+                        checkOldPurchases()
+                        Handler(Looper.getMainLooper()).post { callback.invoke(true, false,  BillingState.CONNECTION_ESTABLISHED.message) }
+                    } else {
+                        setBillingState(BillingState.CONNECTION_FAILED)
+                        Handler(Looper.getMainLooper()).post { callback.invoke(false, false, billingResult.debugMessage) }
+                    }
+                }
+            })
+        }
+    }
+
+    protected fun getOldPurchases(productIdsList: List<String>, callback: (connectionResult: Boolean, alreadyPurchased: Boolean,message: String) -> Unit) {
         connectionCallback = callback
         if (productIdsList.isEmpty()) {
             setBillingState(BillingState.EMPTY_PRODUCT_ID_LIST)
@@ -80,7 +125,7 @@ abstract class BillingHelper(private val context: Context) {
                 val isBillingReady = billingResult.responseCode == BillingClient.BillingResponseCode.OK
                 if (isBillingReady) {
                     setBillingState(BillingState.CONNECTION_ESTABLISHED)
-                    getOldPurchases(autoPurchase)
+                    checkOldPurchases()
                     Handler(Looper.getMainLooper()).post { callback.invoke(true, false,  BillingState.CONNECTION_ESTABLISHED.message) }
                 } else {
                     setBillingState(BillingState.CONNECTION_FAILED)
@@ -90,7 +135,8 @@ abstract class BillingHelper(private val context: Context) {
         })
     }
 
-    private fun getOldPurchases(autoPurchase: Boolean) = CoroutineScope(Dispatchers.Main).launch {
+
+    private fun checkOldPurchases() = CoroutineScope(Dispatchers.Main).launch {
         setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_FETCHING)
         val queryPurchasesParams = QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build()
         billingClient.queryPurchasesAsync(queryPurchasesParams) { _, purchases ->
@@ -110,13 +156,13 @@ abstract class BillingHelper(private val context: Context) {
             if (purchases.isEmpty()) {
                 setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_NOT_FOUND)
             }
-            queryForAvailableProducts(autoPurchase)
+            queryForAvailableProducts()
         }
     }
 
     /* -------------------------------------------- Query available console products  -------------------------------------------- */
 
-    private fun queryForAvailableProducts(autoPurchase: Boolean) = CoroutineScope(Dispatchers.Main).launch {
+    private fun queryForAvailableProducts() = CoroutineScope(Dispatchers.Main).launch {
         setBillingState(BillingState.CONSOLE_PRODUCTS_FETCHING)
         val productDetailsResult = withContext(Dispatchers.IO) {
             billingClient.queryProductDetails(QueryProductDetailsParams.newBuilder().setProductList(dpProvider.getProductList()).build())
@@ -129,10 +175,6 @@ abstract class BillingHelper(private val context: Context) {
             } else {
                 dpProvider.setProductDetailsList(productDetailsResult.productDetailsList!!)
                 setBillingState(BillingState.CONSOLE_PRODUCTS_AVAILABLE)
-                Log.d(TAG, "queryForAvailableProducts: autoPurchase$autoPurchase purchaseCallback $purchaseCallback")
-                /*if (autoPurchase && purchaseCallback != null) {
-                    purchase(context, purchaseCallback!!)
-                }*/
             }
         } else {
             setBillingState(BillingState.CONSOLE_PRODUCTS_FETCHING_FAILED)
@@ -171,7 +213,7 @@ abstract class BillingHelper(private val context: Context) {
 
         if (getBillingState() == BillingState.NO_INTERNET_CONNECTION) {
             if (isInternetConnected && connectionCallback != null) {
-                startBillingConnection(productIdsList = dpProvider.getProductIdsList(), autoPurchase = true, callback = connectionCallback!!)
+                startBillingConnection(productIdsList = dpProvider.getProductIdsList(), callback = connectionCallback!!)
                 return true
             }
             callback.invoke(false, getBillingState().message)

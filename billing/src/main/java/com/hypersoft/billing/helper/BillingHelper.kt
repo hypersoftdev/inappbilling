@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Suppress("unused")
-abstract class BillingHelper(private val activity: Activity) {
+abstract class BillingHelper(private val context: Context) {
 
     private val dpProvider by lazy { DataProvider() }
     private var connectionCallback: ((connectionResult: Boolean, alreadyPurchased: Boolean, message: String) -> Unit)? = null
@@ -37,7 +37,7 @@ abstract class BillingHelper(private val activity: Activity) {
     /* ------------------------------------------------ Initializations ------------------------------------------------ */
 
     private val billingClient by lazy {
-        BillingClient.newBuilder(activity).setListener(purchasesUpdatedListener).enablePendingPurchases().build()
+        BillingClient.newBuilder(context).setListener(purchasesUpdatedListener).enablePendingPurchases().build()
     }
 
     /* ------------------------------------------------ Establish Connection ------------------------------------------------ */
@@ -130,9 +130,9 @@ abstract class BillingHelper(private val activity: Activity) {
                 dpProvider.setProductDetailsList(productDetailsResult.productDetailsList!!)
                 setBillingState(BillingState.CONSOLE_PRODUCTS_AVAILABLE)
                 Log.d(TAG, "queryForAvailableProducts: autoPurchase$autoPurchase purchaseCallback $purchaseCallback")
-                if (autoPurchase && purchaseCallback != null) {
-                    purchase(purchaseCallback!!)
-                }
+                /*if (autoPurchase && purchaseCallback != null) {
+                    purchase(context, purchaseCallback!!)
+                }*/
             }
         } else {
             setBillingState(BillingState.CONSOLE_PRODUCTS_FETCHING_FAILED)
@@ -141,14 +141,16 @@ abstract class BillingHelper(private val activity: Activity) {
 
     /* --------------------------------------------------- Make Purchase  --------------------------------------------------- */
 
-    protected fun purchase(callback: (isPurchased: Boolean, message: String) -> Unit) {
+    protected fun purchase(activity: Activity?, callback: (isPurchased: Boolean, message: String) -> Unit) {
         this.purchaseCallback = callback
 
+        if (activity == null) return
         if (checkValidations(callback)) return
 
         val productDetailsParamsList = listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(dpProvider.getProductDetail()).build())
 
         val billingFlowParams = BillingFlowParams.newBuilder().setProductDetailsParamsList(productDetailsParamsList).build()
+
 
         // Launch the billing flow
         val billingResult = billingClient.launchBillingFlow(activity, billingFlowParams)
@@ -270,7 +272,7 @@ abstract class BillingHelper(private val activity: Activity) {
 
     /* ------------------------------------- Internet Connection ------------------------------------- */
 
-    private val connectivityManager = activity.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     private val isInternetConnected: Boolean
         get() {

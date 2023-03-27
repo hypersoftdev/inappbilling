@@ -10,6 +10,7 @@ import com.hypersoft.billing.BillingManager
 import com.hypersoft.billing.status.State
 
 class MainActivity : AppCompatActivity() {
+
     private val billingManager by lazy { BillingManager(this) }
     private lateinit var tvTitle: TextView
 
@@ -56,7 +57,7 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun onPurchaseClick() {
-        billingManager.makePurchase { isSuccess, message ->
+        billingManager.makePurchase(this) { isSuccess, message ->
             showMessage(message)
         }
     }

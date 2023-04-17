@@ -2,18 +2,26 @@ package com.hypersoft.billing
 
 import android.app.Activity
 import android.content.Context
+import com.hypersoft.billing.enums.SubscriptionTags
 
 import com.hypersoft.billing.helper.BillingHelper
+import com.hypersoft.billing.interfaces.OnPurchaseListener
+import dev.epegasus.billinginapppurchases.interfaces.OnConnectionListener
 
 /**
  * @param context: Context can be of Application class
  */
 
-class BillingManager(private val context: Context) : BillingHelper(context) {
+class BillingManager(private val activity: Activity) : BillingHelper(activity) {
 
-    override fun startConnection(productIdsList: List<String>, callback: (connectionResult: Boolean, alreadyPurchased: Boolean, message: String) -> Unit) = startBillingConnection(productIdsList = productIdsList, callback = callback)
-    override fun startOldPurchaseConnection(productIdsList: List<String>, callback: (connectionResult: Boolean, alreadyPurchased: Boolean, message: String) -> Unit) = getOldPurchases(productIdsList = productIdsList, callback = callback)
+    override fun setCheckForSubscription(isCheckRequired: Boolean) {
+        checkForSubscription = isCheckRequired
+    }
 
-    fun makePurchase(activity: Activity?, callback: (isPurchased: Boolean, message: String) -> Unit) = purchase(activity, callback)
+    override fun startConnection(productIdsList: List<String>, onConnectionListener: OnConnectionListener) = startBillingConnection(productIdsList, onConnectionListener)
+
+    fun makeInAppPurchase(onPurchaseListener: OnPurchaseListener) = purchaseInApp(onPurchaseListener)
+
+    fun makeSubPurchase(subscriptionTags: SubscriptionTags, onPurchaseListener: OnPurchaseListener) = purchaseSub(subscriptionTags, onPurchaseListener)
 
 }

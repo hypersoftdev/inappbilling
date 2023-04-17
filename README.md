@@ -23,10 +23,16 @@ Add inappbilling dependencies in App level build.gradle.
     dependencies {
              implementation 'com.github.hypersoftdev:inappbilling:2.1.0'
     }
-    
-    for stable version, use -> implementation 'com.github.hypersoftdev:inappbilling:1.1.6'
-    
-```  
+``` 
+
+For stable version, use
+
+```
+    dependencies {
+             implementation 'com.github.hypersoftdev:inappbilling:1.1.6'
+    }
+``` 
+
 # Pre-Release IMPLEMENTATION
 
 ### Step 3

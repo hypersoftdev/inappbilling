@@ -7,7 +7,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.hypersoft.billing.BillingManager
+import com.hypersoft.billing.interfaces.OnPurchaseListener
 import com.hypersoft.billing.status.State
+import dev.epegasus.billinginapppurchases.interfaces.OnConnectionListener
 
 class MainActivity : AppCompatActivity() {
 
@@ -38,32 +40,52 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initBilling() {
+        billingManager.setCheckForSubscription(true)
         if (BuildConfig.DEBUG) {
-            billingManager.startConnection(billingManager.getDebugProductIDList()) { isConnectionEstablished, alreadyPurchased, message ->
-                showMessage(message)
-                if (alreadyPurchased) {
-                    // Save settings for purchased product
+            billingManager.startConnection(billingManager.getDebugProductIDList(), object : OnConnectionListener {
+                override fun onConnectionResult(isSuccess: Boolean, message: String) {
+                    showMessage(message)
+                    Log.d("TAG", "onConnectionResult: $isSuccess - $message")
                 }
-            }
+
+                override fun onOldPurchaseResult(isPurchased: Boolean) {
+                    // Update your shared-preferences here!
+                    Log.d("TAG", "onOldPurchaseResult: $isPurchased")
+                }
+            })
         } else {
-            billingManager.startConnection(listOf(productId)) { isConnectionEstablished, alreadyPurchased, message ->
-                showMessage(message)
-                if (alreadyPurchased) {
-                    // Save settings for purchased product
+            billingManager.startConnection(listOf(productId), object : OnConnectionListener {
+                override fun onConnectionResult(isSuccess: Boolean, message: String) {
+                    showMessage(message)
+                    Log.d("TAG", "onConnectionResult: $isSuccess - $message")
                 }
-            }
+
+                override fun onOldPurchaseResult(isPurchased: Boolean) {
+                    // Update your shared-preferences here!
+                    Log.d("TAG", "onOldPurchaseResult: $isPurchased")
+                }
+            })
         }
     }
 
 
     private fun onPurchaseClick() {
-        billingManager.makePurchase(this) { isSuccess, message ->
-            showMessage(message)
-        }
+        // In-App
+        billingManager.makeInAppPurchase(object : OnPurchaseListener {
+            override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
+                showMessage(message)
+            }
+        })
+
+        // Subscription
+        /*billingManager.makeSubPurchase(SubscriptionTags.basicMonthly, object : OnPurchaseListener {
+            override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
+                showMessage(message)
+            }
+        })*/
     }
 
     private fun showMessage(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
-
 }

@@ -16,6 +16,9 @@ Add maven repository in project level build.gradle or in latest project setting.
     }
 ```  
 
+
+# Pre-Release IMPLEMENTATION
+
 ### Step 2
 
 Add inappbilling dependencies in App level build.gradle.
@@ -24,16 +27,6 @@ Add inappbilling dependencies in App level build.gradle.
              implementation 'com.github.hypersoftdev:inappbilling:2.1.0'
     }
 ``` 
-
-For stable version, use
-
-```
-    dependencies {
-             implementation 'com.github.hypersoftdev:inappbilling:1.1.6'
-    }
-``` 
-
-# Pre-Release IMPLEMENTATION
 
 ### Step 3
 
@@ -139,6 +132,15 @@ There are few subsciption tags as follow to generate any offer relevant to plans
         6) premiumYearly,
 
 # STABLE IMPLEMENTATION
+
+### Step 2
+
+Add inappbilling dependencies in App level build.gradle.
+```
+    dependencies {
+                implementation 'com.github.hypersoftdev:inappbilling:1.1.6'
+    }
+``` 
 
 ### Step 3
 

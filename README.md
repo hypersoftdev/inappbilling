@@ -21,9 +21,124 @@ Add maven repository in project level build.gradle or in latest project setting.
 Add inappbilling dependencies in App level build.gradle.
 ```
     dependencies {
+             implementation 'com.github.hypersoftdev:inappbilling:2.1.0'
+    }
+``` 
+
+For stable version, use
+
+```
+    dependencies {
              implementation 'com.github.hypersoftdev:inappbilling:1.1.6'
     }
+``` 
+
+# Pre-Release IMPLEMENTATION
+
+### Step 3
+
+Declare BillingManger Variable, "this" should be the reference of an activity.
+
+also declare your original productId
+
+```
+    private val billingManager by lazy { BillingManager(this) }
+    private val productId:String = "Paste your original Product ID"
 ```  
+
+#### Enable Subscription Check
+
+```
+        billingManager.setCheckForSubscription(true)
+```  
+
+#### Billing Initializaiton
+
+Get debugging ids for testing using "getDebugProductIDList()" method
+
+```
+        if (BuildConfig.DEBUG) {
+            billingManager.startConnection(billingManager.getDebugProductIDList(), object : OnConnectionListener {
+                override fun onConnectionResult(isSuccess: Boolean, message: String) {
+                    binding.mbMakePurchase.isEnabled = isSuccess
+                    Log.d("TAG", "onConnectionResult: $isSuccess - $message")
+                }
+
+                override fun onOldPurchaseResult(isPurchased: Boolean) {
+                    // Update your shared-preferences here!
+                    Log.d("TAG", "onOldPurchaseResult: $isPurchased")
+                }
+            })
+        } else {
+            billingManager.startConnection(listOf(packageName), object : OnConnectionListener {
+                override fun onConnectionResult(isSuccess: Boolean, message: String) {
+                    Log.d("TAG", "onConnectionResult: $isSuccess - $message")
+                }
+
+                override fun onOldPurchaseResult(isPurchased: Boolean) {
+                    // Update your shared-preferences here!
+                    Log.d("TAG", "onOldPurchaseResult: $isPurchased")
+                }
+            })
+        }
+
+```
+#### Billing State Observer
+
+observe the states of establishing connections
+
+```
+State.billingState.observe(this) {
+            Log.d("BillingManager", "initObserver: $it")
+        }
+```
+#### Purchasing InApp
+
+```
+        billingManager.makeInAppPurchase(object : OnPurchaseListener {
+            override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
+                Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+                 Log.d("TAG", "makeInAppPurchase: $isPurchaseSuccess - $message")
+            }
+        })
+```
+
+#### Purchasing Subscription
+
+```
+        billingManager.makeSubPurchase(SubscriptionTags.basicMonthly, object : OnPurchaseListener {
+            override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
+                Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+                binding.mbMakePurchase.isEnabled = !isPurchaseSuccess
+            }
+        })
+```
+
+#### SubscriptionTags
+
+Add plans and tags on Play Console
+There are few subsciption tags as follow to generate any offer relevant to plans.
+    Two Types of Plans
+        1) basic_subscription
+        2) premium_subscription
+
+    Tags for both plans as follow:
+        
+        1) basicWeekly,
+        2) basicBimonthly,
+        3) basicMonthly,
+        4) basicQuarterly,
+        5) basicSemiYearly,
+        6) basicYearly,
+
+        1) premiumWeekly,
+        2) premiumBimonthly,
+        3) premiumMonthly,
+        4) premiumQuarterly,
+        5) premiumSemiYearly,
+        6) premiumYearly,
+
+# STABLE IMPLEMENTATION
 
 ### Step 3
 

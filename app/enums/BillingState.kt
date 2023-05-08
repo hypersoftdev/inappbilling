@@ -1,13 +1,5 @@
 package com.hypersoft.billing.enums
 
-/**
- * @Author: SOHAIB AHMED
- * @Date: 08,May,2023
- * @Accounts
- *      -> https://github.com/epegasus
- *      -> https://stackoverflow.com/users/20440272/sohaib-ahmed
- */
-
 enum class BillingState(val message: String) {
     NONE("Not Stated"),
     NO_INTERNET_CONNECTION("No Internet Connection"),

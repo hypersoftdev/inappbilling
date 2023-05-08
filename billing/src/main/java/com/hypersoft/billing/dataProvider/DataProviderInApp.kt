@@ -49,7 +49,9 @@ internal class DataProviderInApp {
         this.productDetailsList = productDetailsList
     }
 
-    fun getProductDetail(): ProductDetails {
+    fun getProductDetail(): ProductDetails? {
+        if (productDetailsList.isEmpty())
+            return null
         return productDetailsList[0]
     }
 

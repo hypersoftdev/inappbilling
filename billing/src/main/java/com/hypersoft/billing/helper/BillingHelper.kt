@@ -22,7 +22,6 @@ import com.android.billingclient.api.queryProductDetails
 import com.hypersoft.billing.dataProvider.DataProviderInApp
 import com.hypersoft.billing.dataProvider.DataProviderSub
 import com.hypersoft.billing.enums.BillingState
-import com.hypersoft.billing.enums.SubscriptionTags
 import com.hypersoft.billing.interfaces.OnPurchaseListener
 import com.hypersoft.billing.status.State.getBillingState
 import com.hypersoft.billing.status.State.setBillingState
@@ -42,6 +41,7 @@ abstract class BillingHelper(private val activity: Activity) {
     private var onPurchaseListener: OnPurchaseListener? = null
 
     private var isPurchasedFound = false
+
     @JvmField
     protected var checkForSubscription = false
 
@@ -269,16 +269,20 @@ abstract class BillingHelper(private val activity: Activity) {
         this.onPurchaseListener = onPurchaseListener
         if (checkValidationsInApp()) return
 
-        val productDetailsParamsList = listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(dataProviderInApp.getProductDetail()).build())
-        val billingFlowParams = BillingFlowParams.newBuilder().setProductDetailsParamsList(productDetailsParamsList).build()
+        dataProviderInApp.getProductDetail()?.let { productDetail ->
+            val productDetailsParamsList = listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(productDetail).build())
+            val billingFlowParams = BillingFlowParams.newBuilder().setProductDetailsParamsList(productDetailsParamsList).build()
 
-        // Launch the billing flow
-        val billingResult = billingClient.launchBillingFlow(activity, billingFlowParams)
+            // Launch the billing flow
+            val billingResult = billingClient.launchBillingFlow(activity, billingFlowParams)
 
-        when (billingResult.responseCode) {
-            BillingClient.BillingResponseCode.OK -> setBillingState(BillingState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)
-            BillingClient.BillingResponseCode.USER_CANCELED -> setBillingState(BillingState.LAUNCHING_FLOW_INVOCATION_USER_CANCELLED)
-            else -> setBillingState(BillingState.LAUNCHING_FLOW_INVOCATION_EXCEPTION_FOUND)
+            when (billingResult.responseCode) {
+                BillingClient.BillingResponseCode.OK -> setBillingState(BillingState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)
+                BillingClient.BillingResponseCode.USER_CANCELED -> setBillingState(BillingState.LAUNCHING_FLOW_INVOCATION_USER_CANCELLED)
+                else -> setBillingState(BillingState.LAUNCHING_FLOW_INVOCATION_EXCEPTION_FOUND)
+            }
+        } ?: run {
+            setBillingState(BillingState.CONSOLE_PRODUCTS_IN_APP_NOT_EXIST)
         }
     }
 
@@ -308,6 +312,10 @@ abstract class BillingHelper(private val activity: Activity) {
             return true
         }
 
+        if (dataProviderInApp.getProductDetail() == null) {
+            setBillingState(BillingState.CONSOLE_PRODUCTS_IN_APP_NOT_EXIST)
+        }
+
         if (getBillingState() == BillingState.CONSOLE_PRODUCTS_IN_APP_NOT_EXIST) {
             onPurchaseListener?.onPurchaseResult(false, BillingState.CONSOLE_PRODUCTS_IN_APP_NOT_EXIST.message)
             return true
@@ -330,7 +338,7 @@ abstract class BillingHelper(private val activity: Activity) {
         return false
     }
 
-    protected fun purchaseSub(subscriptionTags: SubscriptionTags, onPurchaseListener: OnPurchaseListener) {
+    protected fun purchaseSub(subscriptionTags: String, onPurchaseListener: OnPurchaseListener) {
         if (checkValidationsSub()) return
 
         this.onPurchaseListener = onPurchaseListener
@@ -339,7 +347,7 @@ abstract class BillingHelper(private val activity: Activity) {
 
         // Retrieve all offers the user is eligible for.
         val offers = productDetails.subscriptionOfferDetails?.let {
-            retrieveEligibleOffers(offerDetails = it, tag = subscriptionTags.toString())
+            retrieveEligibleOffers(offerDetails = it, tag = subscriptionTags)
         }
 
         //  Get the offer id token of the lowest priced offer.

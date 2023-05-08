@@ -7,6 +7,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.hypersoft.billing.BillingManager
+import com.hypersoft.billing.status.SubscriptionTags
 import com.hypersoft.billing.interfaces.OnPurchaseListener
 import com.hypersoft.billing.status.State
 import dev.epegasus.billinginapppurchases.interfaces.OnConnectionListener
@@ -78,11 +79,11 @@ class MainActivity : AppCompatActivity() {
         })
 
         // Subscription
-        /*billingManager.makeSubPurchase(SubscriptionTags.basicMonthly, object : OnPurchaseListener {
+        billingManager.makeSubPurchase(SubscriptionTags.basicMonthly, object : OnPurchaseListener {
             override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
                 showMessage(message)
             }
-        })*/
+        })
     }
 
     private fun showMessage(message: String) {

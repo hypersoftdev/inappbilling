@@ -1,5 +1,6 @@
 package com.hypersoft.billing.status
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.hypersoft.billing.enums.BillingState
@@ -12,6 +13,7 @@ object State {
     val billingState: LiveData<BillingState> get() = _billingState
 
     fun setBillingState(billingState: BillingState) {
+        Log.d("BillingManager", "setBillingState: $billingState")
         BILLING_STATE = billingState
         _billingState.postValue(BILLING_STATE)
     }
@@ -19,6 +21,7 @@ object State {
     fun getBillingState(): BillingState {
         return BILLING_STATE
     }
+
     override fun toString(): String {
         return when (BILLING_STATE) {
             BillingState.NONE -> BillingState.NONE.message

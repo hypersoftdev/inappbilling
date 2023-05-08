@@ -21,10 +21,10 @@ Add maven repository in project level build.gradle or in latest project setting.
 
 ### Step 2
 
-Add inappbilling dependencies in App level build.gradle.
+Add inappbilling dependencies in App level build.gradle. Latest Version
 ```
     dependencies {
-             implementation 'com.github.hypersoftdev:inappbilling:2.1.0'
+             implementation 'com.github.hypersoftdev:inappbilling:2.1.1'
     }
 ``` 
 

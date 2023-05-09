@@ -15,8 +15,10 @@ internal class DataProviderSub {
      */
 
     val productIdsList = listOf(
-        "basic_subscription",
-        "premium_subscription"
+        "basic-subscription-monthly",
+        "basic-subscription-yearly",
+        "premium-subscription-monthly",
+        "premium-subscription-yearly"
     )
 
     fun getProductList(): List<QueryProductDetailsParams.Product> {
@@ -33,8 +35,8 @@ internal class DataProviderSub {
         this.productDetailsList = productDetailsList
     }
 
-    fun getProductDetail(): ProductDetails {
-        return productDetailsList[0]
+    fun getProductDetail(indexOf: Int): ProductDetails {
+        return productDetailsList[indexOf]
     }
 
     fun getProductDetailsList(): List<ProductDetails> {

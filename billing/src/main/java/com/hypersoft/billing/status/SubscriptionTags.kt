@@ -10,10 +10,10 @@ package com.hypersoft.billing.status
 object SubscriptionTags {
 
     const val basicWeekly = "basic-weekly"
-    const val basicMonthly = "basic-monthly"
+    const val basicMonthly = "monthly-basic"
     const val basicQuarterly = "basic-quarterly"
     const val basicSemiYearly = "basic-semi-yearly"
-    const val basicYearly = "basic-yearly"
+    const val basicYearly = "yearly-basic"
 
     const val premiumWeekly = "premium-weekly"
     const val premiumMonthly = "premium-monthly"

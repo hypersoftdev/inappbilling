@@ -25,6 +25,7 @@ import com.hypersoft.billing.enums.BillingState
 import com.hypersoft.billing.interfaces.OnPurchaseListener
 import com.hypersoft.billing.status.State.getBillingState
 import com.hypersoft.billing.status.State.setBillingState
+import com.hypersoft.billing.status.SubscriptionTags
 import dev.epegasus.billinginapppurchases.interfaces.OnConnectionListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -343,7 +344,19 @@ abstract class BillingHelper(private val activity: Activity) {
 
         this.onPurchaseListener = onPurchaseListener
 
-        val productDetails = dataProviderSub.getProductDetailsList()[0]
+        val indexOf = when (subscriptionTags) {
+            SubscriptionTags.basicMonthly -> 0
+            SubscriptionTags.basicYearly -> 1
+            SubscriptionTags.premiumMonthly -> 2
+            SubscriptionTags.premiumYearly -> 3
+            else -> -1
+        }
+
+        if (indexOf == -1) {
+            setBillingState(BillingState.CONSOLE_PRODUCTS_SUB_NOT_FOUND)
+            return
+        }
+        val productDetails = dataProviderSub.getProductDetail(indexOf)
 
         // Retrieve all offers the user is eligible for.
         val offers = productDetails.subscriptionOfferDetails?.let {
@@ -354,12 +367,11 @@ abstract class BillingHelper(private val activity: Activity) {
         val offerToken = offers?.let { leastPricedOfferToken(it) }
 
         offerToken?.let { token ->
-            val productDetailsParamsList = listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(dataProviderSub.getProductDetail()).setOfferToken(token).build())
+            val productDetailsParamsList = listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(productDetails).setOfferToken(token).build())
             val billingFlowParams = BillingFlowParams.newBuilder().setProductDetailsParamsList(productDetailsParamsList).build()
 
             // Launch the billing flow
             val billingResult = billingClient.launchBillingFlow(activity, billingFlowParams)
-
 
             when (billingResult.responseCode) {
                 BillingClient.BillingResponseCode.OK -> setBillingState(BillingState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)

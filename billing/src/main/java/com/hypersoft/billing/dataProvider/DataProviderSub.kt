@@ -22,7 +22,7 @@ internal class DataProviderSub {
     )*/
 
     val productIdsList = listOf(
-        "basic-subscription-monthly"
+        "monthly_pic_collage_plan"
     )
 
     fun getProductList(): List<QueryProductDetailsParams.Product> {

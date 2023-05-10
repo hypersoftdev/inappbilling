@@ -33,7 +33,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Suppress("unused")
-abstract class BillingHelper(private val activity: Activity) {
+abstract class BillingHelper(private val context: Context) {
 
     private val dataProviderInApp by lazy { DataProviderInApp() }
     private val dataProviderSub by lazy { DataProviderSub() }
@@ -49,7 +49,7 @@ abstract class BillingHelper(private val activity: Activity) {
     /* ------------------------------------------------ Initializations ------------------------------------------------ */
 
     private val billingClient by lazy {
-        BillingClient.newBuilder(activity).setListener(purchasesUpdatedListener).enablePendingPurchases().build()
+        BillingClient.newBuilder(context).setListener(purchasesUpdatedListener).enablePendingPurchases().build()
     }
 
     /* ------------------------------------------------ Establish Connection ------------------------------------------------ */
@@ -266,16 +266,16 @@ abstract class BillingHelper(private val activity: Activity) {
 
     /* --------------------------------------------------- Make Purchase  --------------------------------------------------- */
 
-    protected fun purchaseInApp(onPurchaseListener: OnPurchaseListener) {
+    protected fun purchaseInApp(activity: Activity?, onPurchaseListener: OnPurchaseListener) {
         this.onPurchaseListener = onPurchaseListener
-        if (checkValidationsInApp()) return
+        if (checkValidationsInApp(activity)) return
 
         dataProviderInApp.getProductDetail()?.let { productDetail ->
             val productDetailsParamsList = listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(productDetail).build())
             val billingFlowParams = BillingFlowParams.newBuilder().setProductDetailsParamsList(productDetailsParamsList).build()
 
             // Launch the billing flow
-            val billingResult = billingClient.launchBillingFlow(activity, billingFlowParams)
+            val billingResult = billingClient.launchBillingFlow(activity!!, billingFlowParams)
 
             when (billingResult.responseCode) {
                 BillingClient.BillingResponseCode.OK -> setBillingState(BillingState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)
@@ -287,7 +287,13 @@ abstract class BillingHelper(private val activity: Activity) {
         }
     }
 
-    private fun checkValidationsInApp(): Boolean {
+    private fun checkValidationsInApp(activity: Activity?): Boolean {
+        if (activity == null) {
+            setBillingState(BillingState.ACTIVITY_REFERENCE_NOT_FOUND)
+            onPurchaseListener?.onPurchaseResult(false, getBillingState().message)
+            return true
+        }
+
         if (getBillingState() == BillingState.EMPTY_PRODUCT_ID_LIST) {
             onPurchaseListener?.onPurchaseResult(false, getBillingState().message)
             return true
@@ -339,8 +345,8 @@ abstract class BillingHelper(private val activity: Activity) {
         return false
     }
 
-    protected fun purchaseSub(subscriptionTags: String, onPurchaseListener: OnPurchaseListener) {
-        if (checkValidationsSub()) return
+    protected fun purchaseSub(activity: Activity?, subscriptionTags: String, onPurchaseListener: OnPurchaseListener) {
+        if (checkValidationsSub(activity)) return
 
         this.onPurchaseListener = onPurchaseListener
 
@@ -356,7 +362,13 @@ abstract class BillingHelper(private val activity: Activity) {
             setBillingState(BillingState.CONSOLE_PRODUCTS_SUB_NOT_FOUND)
             return
         }
-        val productDetails = dataProviderSub.getProductDetail(indexOf)
+
+        if (indexOf >= dataProviderSub.getProductDetailsList().size) {
+            setBillingState(BillingState.CONSOLE_PRODUCTS_SUB_NOT_FOUND)
+            return
+        }
+
+        val productDetails = dataProviderSub.getProductDetailsList()[indexOf]
 
         // Retrieve all offers the user is eligible for.
         val offers = productDetails.subscriptionOfferDetails?.let {
@@ -371,7 +383,7 @@ abstract class BillingHelper(private val activity: Activity) {
             val billingFlowParams = BillingFlowParams.newBuilder().setProductDetailsParamsList(productDetailsParamsList).build()
 
             // Launch the billing flow
-            val billingResult = billingClient.launchBillingFlow(activity, billingFlowParams)
+            val billingResult = billingClient.launchBillingFlow(activity!!, billingFlowParams)
 
             when (billingResult.responseCode) {
                 BillingClient.BillingResponseCode.OK -> setBillingState(BillingState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)
@@ -381,7 +393,13 @@ abstract class BillingHelper(private val activity: Activity) {
         }
     }
 
-    private fun checkValidationsSub(): Boolean {
+    private fun checkValidationsSub(activity: Activity?): Boolean {
+        if (activity == null) {
+            setBillingState(BillingState.ACTIVITY_REFERENCE_NOT_FOUND)
+            onPurchaseListener?.onPurchaseResult(false, getBillingState().message)
+            return true
+        }
+
         if (getBillingState() == BillingState.NO_INTERNET_CONNECTION) {
             if (isInternetConnected && onConnectionListener != null) {
                 startBillingConnection(productIdsList = dataProviderInApp.getProductIdsList(), onConnectionListener!!)
@@ -390,7 +408,6 @@ abstract class BillingHelper(private val activity: Activity) {
             onPurchaseListener?.onPurchaseResult(false, getBillingState().message)
             return true
         }
-
 
         if (getBillingState() == BillingState.CONNECTION_FAILED || getBillingState() == BillingState.CONNECTION_DISCONNECTED || getBillingState() == BillingState.CONNECTION_ESTABLISHING) {
             onPurchaseListener?.onPurchaseResult(false, getBillingState().message)
@@ -532,7 +549,6 @@ abstract class BillingHelper(private val activity: Activity) {
         onPurchaseListener?.onPurchaseResult(false, getBillingState().message)
     }
 
-
     private val acknowledgePurchaseResponseListener = AcknowledgePurchaseResponseListener {
         if (it.responseCode == BillingClient.BillingResponseCode.OK) {
             setBillingState(BillingState.PURCHASED_SUCCESSFULLY)
@@ -545,7 +561,7 @@ abstract class BillingHelper(private val activity: Activity) {
 
     /* ------------------------------------- Internet Connection ------------------------------------- */
 
-    private val connectivityManager = activity.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     private val isInternetConnected: Boolean
         get() {

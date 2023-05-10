@@ -33,6 +33,7 @@ object State {
             BillingState.CONNECTION_ESTABLISHED -> BillingState.CONNECTION_ESTABLISHED.message
             BillingState.CONNECTION_FAILED -> BillingState.CONNECTION_FAILED.message
             BillingState.FEATURE_NOT_SUPPORTED -> BillingState.FEATURE_NOT_SUPPORTED.message
+            BillingState.ACTIVITY_REFERENCE_NOT_FOUND -> BillingState.ACTIVITY_REFERENCE_NOT_FOUND.message
 
             BillingState.CONSOLE_OLD_PRODUCTS_INAPP_FETCHING -> BillingState.CONSOLE_OLD_PRODUCTS_INAPP_FETCHING.message
             BillingState.CONSOLE_OLD_PRODUCTS_INAPP_NOT_FOUND -> BillingState.CONSOLE_OLD_PRODUCTS_INAPP_NOT_FOUND.message

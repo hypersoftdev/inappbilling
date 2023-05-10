@@ -1,6 +1,7 @@
 package com.hypersoft.billing
 
 import android.app.Activity
+import android.content.Context
 import com.hypersoft.billing.helper.BillingHelper
 import com.hypersoft.billing.interfaces.OnPurchaseListener
 import dev.epegasus.billinginapppurchases.interfaces.OnConnectionListener
@@ -9,7 +10,7 @@ import dev.epegasus.billinginapppurchases.interfaces.OnConnectionListener
  * @param context: Context can be of Application class
  */
 
-class BillingManager(private val activity: Activity) : BillingHelper(activity) {
+class BillingManager(context: Context) : BillingHelper(context) {
 
     override fun setCheckForSubscription(isCheckRequired: Boolean) {
         checkForSubscription = isCheckRequired
@@ -17,8 +18,8 @@ class BillingManager(private val activity: Activity) : BillingHelper(activity) {
 
     override fun startConnection(productIdsList: List<String>, onConnectionListener: OnConnectionListener) = startBillingConnection(productIdsList, onConnectionListener)
 
-    fun makeInAppPurchase(onPurchaseListener: OnPurchaseListener) = purchaseInApp(onPurchaseListener)
+    fun makeInAppPurchase(activity: Activity?, onPurchaseListener: OnPurchaseListener) = purchaseInApp(activity, onPurchaseListener)
 
-    fun makeSubPurchase(subscriptionTags: String, onPurchaseListener: OnPurchaseListener) = purchaseSub(subscriptionTags, onPurchaseListener)
+    fun makeSubPurchase(activity: Activity?, subscriptionTags: String, onPurchaseListener: OnPurchaseListener) = purchaseSub(activity, subscriptionTags, onPurchaseListener)
 
 }

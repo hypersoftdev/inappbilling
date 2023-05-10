@@ -18,6 +18,7 @@ enum class BillingState(val message: String) {
     CONNECTION_ESTABLISHED("Connection has been established to Google Play Console"),
     CONNECTION_FAILED("Failed to connect Google Play Console"),
     FEATURE_NOT_SUPPORTED("Feature is not Supported! Cannot buy Subscription"),
+    ACTIVITY_REFERENCE_NOT_FOUND("Activity reference is null"),
 
     CONSOLE_OLD_PRODUCTS_INAPP_FETCHING("InApp -> Fetching old products from google play console."),
     CONSOLE_OLD_PRODUCTS_INAPP_NOT_FOUND("InApp -> User hasn't owned any product yet."),

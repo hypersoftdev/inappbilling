@@ -14,15 +14,9 @@ internal class DataProviderSub {
      * @field productIdsList:   List of product Id's providing by the developer to check/retrieve-details if these products are existing in Google Play Console
      */
 
-    /*val productIdsList = listOf(
-        "basic-subscription-monthly",
-        "basic-subscription-yearly",
-        "premium-subscription-monthly",
-        "premium-subscription-yearly"
-    )*/
-
     val productIdsList = listOf(
-        "monthly_pic_collage_plan"
+        "basic_plan_monthly",
+        "basic_plan_yearly"
     )
 
     fun getProductList(): List<QueryProductDetailsParams.Product> {
@@ -37,10 +31,6 @@ internal class DataProviderSub {
 
     fun setProductDetailsList(productDetailsList: List<ProductDetails>) {
         this.productDetailsList = productDetailsList
-    }
-
-    fun getProductDetail(indexOf: Int): ProductDetails {
-        return productDetailsList[indexOf]
     }
 
     fun getProductDetailsList(): List<ProductDetails> {

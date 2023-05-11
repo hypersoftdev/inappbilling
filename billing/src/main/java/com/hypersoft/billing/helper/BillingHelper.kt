@@ -111,7 +111,14 @@ abstract class BillingHelper(private val context: Context) {
         val queryPurchasesParams = QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build()
         billingClient.queryPurchasesAsync(queryPurchasesParams) { _, purchases ->
             onConnectionListener?.onOldPurchaseResult(false)
+
+            Log.d(TAG, " --------------------------- old purchase (In-App)  --------------------------- ")
+            Log.d(TAG, "getSubscriptionOldPurchases: Object: $purchases")
             purchases.forEach { purchase ->
+                Log.d(TAG, "getSubscriptionOldPurchases: Products: ${purchase.products}")
+                Log.d(TAG, "getSubscriptionOldPurchases: Original JSON: ${purchase.originalJson}")
+                Log.d(TAG, "getSubscriptionOldPurchases: Developer Payload: ${purchase.developerPayload}")
+
                 if (purchase.products.isEmpty()) {
                     setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_NOT_FOUND)
                     return@forEach
@@ -192,6 +199,7 @@ abstract class BillingHelper(private val context: Context) {
             if (productDetailsResult.productDetailsList.isNullOrEmpty()) {
                 setBillingState(BillingState.CONSOLE_PRODUCTS_SUB_NOT_EXIST)
             } else {
+                Log.d(TAG, "queryForAvailableSubProducts: ${productDetailsResult.productDetailsList}")
                 dataProviderSub.setProductDetailsList(productDetailsResult.productDetailsList!!)
                 setBillingState(BillingState.CONSOLE_PRODUCTS_SUB_AVAILABLE)
             }
@@ -217,7 +225,7 @@ abstract class BillingHelper(private val context: Context) {
 
                 purchases.forEach { purchase ->
 
-                    Log.d(TAG, " --------------------------- old purchase  --------------------------- ")
+                    Log.d(TAG, " --------------------------- old purchase (Sub)   --------------------------- ")
                     Log.d(TAG, "getSubscriptionOldPurchases: Object: $purchase")
                     Log.d(TAG, "getSubscriptionOldPurchases: Products: ${purchase.products}")
                     Log.d(TAG, "getSubscriptionOldPurchases: Original JSON: ${purchase.originalJson}")
@@ -346,9 +354,12 @@ abstract class BillingHelper(private val context: Context) {
     }
 
     protected fun purchaseSub(activity: Activity?, subscriptionTags: String, onPurchaseListener: OnPurchaseListener) {
+        Log.d(TAG, "purchaseSub: in")
         if (checkValidationsSub(activity)) return
 
         this.onPurchaseListener = onPurchaseListener
+
+        Log.d(TAG, "purchaseSub: Starting")
 
         val indexOf = when (subscriptionTags) {
             SubscriptionTags.basicMonthly -> 0
@@ -357,6 +368,7 @@ abstract class BillingHelper(private val context: Context) {
             SubscriptionTags.premiumYearly -> 3
             else -> -1
         }
+        Log.d(TAG, "purchaseSub: indexOf : $indexOf")
 
         if (indexOf == -1) {
             setBillingState(BillingState.CONSOLE_PRODUCTS_SUB_NOT_FOUND)
@@ -364,9 +376,11 @@ abstract class BillingHelper(private val context: Context) {
         }
 
         if (indexOf >= dataProviderSub.getProductDetailsList().size) {
+            Log.d(TAG, "purchaseSub: >=  : ${dataProviderSub.getProductDetailsList().size}")
             setBillingState(BillingState.CONSOLE_PRODUCTS_SUB_NOT_FOUND)
             return
         }
+        Log.d(TAG, "purchaseSub: >=  : ${dataProviderSub.getProductDetailsList()}")
 
         val productDetails = dataProviderSub.getProductDetailsList()[indexOf]
 
@@ -428,16 +442,6 @@ abstract class BillingHelper(private val context: Context) {
             setBillingState(BillingState.CONSOLE_PRODUCTS_SUB_NOT_FOUND)
             onPurchaseListener?.onPurchaseResult(false, BillingState.CONSOLE_PRODUCTS_SUB_NOT_FOUND.message)
             return true
-        }
-
-        dataProviderSub.productIdsList.forEach { id ->
-            dataProviderSub.getProductDetailsList().forEach { productDetails ->
-                if (id != productDetails.productId) {
-                    setBillingState(BillingState.CONSOLE_PRODUCTS_SUB_NOT_FOUND)
-                    onPurchaseListener?.onPurchaseResult(false, BillingState.CONSOLE_PRODUCTS_SUB_NOT_FOUND.message)
-                    return true
-                }
-            }
         }
 
         if (billingClient.isFeatureSupported(BillingClient.FeatureType.PRODUCT_DETAILS).responseCode != BillingClient.BillingResponseCode.OK) {

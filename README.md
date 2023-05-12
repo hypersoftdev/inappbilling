@@ -30,7 +30,7 @@ dependencies {
 
 ### Step 3
 
-Declare BillingManger Variable, "this" should be the reference of an activity.
+Declare BillingManger Variable, "this" can be an application context.
 
 also declare your original productId
 
@@ -88,7 +88,7 @@ State.billingState.observe(this) {
 #### Purchasing InApp
 
 ```
-billingManager.makeInAppPurchase(object : OnPurchaseListener {
+billingManager.makeInAppPurchase(activity, object : OnPurchaseListener {
     override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
         Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
         Log.d("TAG", "makeInAppPurchase: $isPurchaseSuccess - $message")
@@ -99,7 +99,7 @@ billingManager.makeInAppPurchase(object : OnPurchaseListener {
 #### Purchasing Subscription
 
 ```
-billingManager.makeSubPurchase(SubscriptionTags.basicMonthly, object : OnPurchaseListener {
+billingManager.makeSubPurchase(activity, SubscriptionTags.basicMonthly, object : OnPurchaseListener {
     override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
         Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
         binding.mbMakePurchase.isEnabled = !isPurchaseSuccess

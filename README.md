@@ -9,11 +9,11 @@ inappbilling is a [Google Play Billing](https://developer.android.com/google/pla
 
 Add maven repository in project level build.gradle or in latest project setting.gradle file
 ```
-    repositories {
-        google()
-        mavenCentral()
-        maven { url "https://jitpack.io" }
-    }
+repositories {
+    google()
+    mavenCentral()
+    maven { url "https://jitpack.io" }
+}
 ```  
 
 
@@ -23,9 +23,9 @@ Add maven repository in project level build.gradle or in latest project setting.
 
 Add inappbilling dependencies in App level build.gradle. Latest Version [![](https://jitpack.io/v/hypersoftdev/inappbilling.svg)](https://jitpack.io/#hypersoftdev/inappbilling)
 ```
-    dependencies {
-             implementation 'com.github.hypersoftdev:inappbilling:2.2.6'
-    }
+dependencies {
+    implementation 'com.github.hypersoftdev:inappbilling:2.2.6'
+}
 ``` 
 
 ### Step 3
@@ -35,14 +35,14 @@ Declare BillingManger Variable, "this" should be the reference of an activity.
 also declare your original productId
 
 ```
-    private val billingManager by lazy { BillingManager(this) }
-    private val productId:String = "Paste your original Product ID"
+private val billingManager by lazy { BillingManager(this) }
+private val productId:String = "Paste your original Product ID"
 ```  
 
 #### Enable Subscription Check
 
 ```
-        billingManager.setCheckForSubscription(true)
+billingManager.setCheckForSubscription(true)
 ```  
 
 #### Billing Initializaiton
@@ -50,30 +50,30 @@ also declare your original productId
 Get debugging ids for testing using "getDebugProductIDList()" method
 
 ```
-        if (BuildConfig.DEBUG) {
-            billingManager.startConnection(billingManager.getDebugProductIDList(), object : OnConnectionListener {
-                override fun onConnectionResult(isSuccess: Boolean, message: String) {
-                    binding.mbMakePurchase.isEnabled = isSuccess
-                    Log.d("TAG", "onConnectionResult: $isSuccess - $message")
-                }
-
-                override fun onOldPurchaseResult(isPurchased: Boolean) {
-                    // Update your shared-preferences here!
-                    Log.d("TAG", "onOldPurchaseResult: $isPurchased")
-                }
-            })
-        } else {
-            billingManager.startConnection(listOf(packageName), object : OnConnectionListener {
-                override fun onConnectionResult(isSuccess: Boolean, message: String) {
-                    Log.d("TAG", "onConnectionResult: $isSuccess - $message")
-                }
-
-                override fun onOldPurchaseResult(isPurchased: Boolean) {
-                    // Update your shared-preferences here!
-                    Log.d("TAG", "onOldPurchaseResult: $isPurchased")
-                }
-            })
+if (BuildConfig.DEBUG) {
+    billingManager.startConnection(billingManager.getDebugProductIDList(), object : OnConnectionListener {
+        override fun onConnectionResult(isSuccess: Boolean, message: String) {
+            binding.mbMakePurchase.isEnabled = isSuccess
+            Log.d("TAG", "onConnectionResult: $isSuccess - $message")
         }
+
+        override fun onOldPurchaseResult(isPurchased: Boolean) {
+            // Update your shared-preferences here!
+            Log.d("TAG", "onOldPurchaseResult: $isPurchased")
+        }
+    })
+} else {
+    billingManager.startConnection(listOf(packageName), object : OnConnectionListener {
+        override fun onConnectionResult(isSuccess: Boolean, message: String) {
+            Log.d("TAG", "onConnectionResult: $isSuccess - $message")
+        }
+
+        override fun onOldPurchaseResult(isPurchased: Boolean) {
+            // Update your shared-preferences here!
+            Log.d("TAG", "onOldPurchaseResult: $isPurchased")
+        }
+    })
+}
 
 ```
 #### Billing State Observer
@@ -82,29 +82,29 @@ observe the states of establishing connections
 
 ```
 State.billingState.observe(this) {
-            Log.d("BillingManager", "initObserver: $it")
-        }
+    Log.d("BillingManager", "initObserver: $it")
+}
 ```
 #### Purchasing InApp
 
 ```
-        billingManager.makeInAppPurchase(object : OnPurchaseListener {
-            override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
-                Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
-                 Log.d("TAG", "makeInAppPurchase: $isPurchaseSuccess - $message")
-            }
-        })
+billingManager.makeInAppPurchase(object : OnPurchaseListener {
+    override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
+        Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+        Log.d("TAG", "makeInAppPurchase: $isPurchaseSuccess - $message")
+    }
+})
 ```
 
 #### Purchasing Subscription
 
 ```
-        billingManager.makeSubPurchase(SubscriptionTags.basicMonthly, object : OnPurchaseListener {
-            override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
-                Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
-                binding.mbMakePurchase.isEnabled = !isPurchaseSuccess
-            }
-        })
+billingManager.makeSubPurchase(SubscriptionTags.basicMonthly, object : OnPurchaseListener {
+    override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
+        Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+        binding.mbMakePurchase.isEnabled = !isPurchaseSuccess
+    }
+})
 ```
 
 #### SubscriptionTags

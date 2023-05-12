@@ -19,13 +19,13 @@ import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.queryProductDetails
+import com.hypersoft.billing.constants.SubscriptionPlans
 import com.hypersoft.billing.dataProvider.DataProviderInApp
 import com.hypersoft.billing.dataProvider.DataProviderSub
 import com.hypersoft.billing.enums.BillingState
 import com.hypersoft.billing.interfaces.OnPurchaseListener
 import com.hypersoft.billing.status.State.getBillingState
 import com.hypersoft.billing.status.State.setBillingState
-import com.hypersoft.billing.status.SubscriptionTags
 import dev.epegasus.billinginapppurchases.interfaces.OnConnectionListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -353,47 +353,55 @@ abstract class BillingHelper(private val context: Context) {
         return false
     }
 
-    protected fun purchaseSub(activity: Activity?, subscriptionTags: String, onPurchaseListener: OnPurchaseListener) {
+    protected fun purchaseSub(activity: Activity?, subscriptionPlans: String, onPurchaseListener: OnPurchaseListener) {
         Log.d(TAG, "purchaseSub: in")
         if (checkValidationsSub(activity)) return
 
         this.onPurchaseListener = onPurchaseListener
 
-        Log.d(TAG, "purchaseSub: Starting")
+        Log.d(TAG, "purchaseSub: Starting: ${dataProviderSub.getProductDetailsList()}")
 
-        val indexOf = when (subscriptionTags) {
-            SubscriptionTags.basicPlanMonthly -> 0
-            SubscriptionTags.basicPlanYearly -> 1
-            /*SubscriptionTags.premiumPlanMonthly -> 2
-            SubscriptionTags.premiumYearly -> 3*/
-            else -> -1
+        var prodDetails: ProductDetails? = null
+
+        dataProviderSub.getProductDetailsList().forEach { productDetails ->
+            if (productDetails.productId == SubscriptionPlans.basicPlanWeekly && subscriptionPlans == SubscriptionPlans.basicPlanWeekly) {
+                prodDetails = productDetails
+                return@forEach
+            } else if (productDetails.productId == SubscriptionPlans.basicPlanFourWeeks && subscriptionPlans == SubscriptionPlans.basicPlanFourWeeks) {
+                prodDetails = productDetails
+                return@forEach
+            } else if (productDetails.productId == SubscriptionPlans.basicPlanMonthly && subscriptionPlans == SubscriptionPlans.basicPlanMonthly) {
+                prodDetails = productDetails
+                return@forEach
+            } else if (productDetails.productId == SubscriptionPlans.basicPlanQuarterly && subscriptionPlans == SubscriptionPlans.basicPlanQuarterly) {
+                prodDetails = productDetails
+                return@forEach
+            } else if (productDetails.productId == SubscriptionPlans.basicPlanSemiYearly && subscriptionPlans == SubscriptionPlans.basicPlanSemiYearly) {
+                prodDetails = productDetails
+                return@forEach
+            } else if (productDetails.productId == SubscriptionPlans.basicPlanYearly && subscriptionPlans == SubscriptionPlans.basicPlanYearly) {
+                prodDetails = productDetails
+                return@forEach
+            }
         }
-        Log.d(TAG, "purchaseSub: indexOf : $indexOf")
 
-        if (indexOf == -1) {
+        Log.d(TAG, "purchaseSub: prodDetails : $prodDetails")
+
+        if (prodDetails == null) {
             setBillingState(BillingState.CONSOLE_PRODUCTS_SUB_NOT_FOUND)
             return
         }
-
-        if (indexOf >= dataProviderSub.getProductDetailsList().size) {
-            Log.d(TAG, "purchaseSub: >=  : ${dataProviderSub.getProductDetailsList().size}")
-            setBillingState(BillingState.CONSOLE_PRODUCTS_SUB_NOT_FOUND)
-            return
-        }
-        Log.d(TAG, "purchaseSub: >=  : ${dataProviderSub.getProductDetailsList()}")
-
-        val productDetails = dataProviderSub.getProductDetailsList()[indexOf]
 
         // Retrieve all offers the user is eligible for.
-        val offers = productDetails.subscriptionOfferDetails?.let {
-            retrieveEligibleOffers(offerDetails = it, tag = subscriptionTags)
+        val offers = prodDetails!!.subscriptionOfferDetails?.let {
+            retrieveEligibleOffers(offerDetails = it, tag = subscriptionPlans)
         }
 
         //  Get the offer id token of the lowest priced offer.
         val offerToken = offers?.let { leastPricedOfferToken(it) }
 
         offerToken?.let { token ->
-            val productDetailsParamsList = listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(productDetails).setOfferToken(token).build())
+            val productDetailsParamsList = listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(prodDetails!!).setOfferToken(token).build())
             val billingFlowParams = BillingFlowParams.newBuilder().setProductDetailsParamsList(productDetailsParamsList).build()
 
             // Launch the billing flow

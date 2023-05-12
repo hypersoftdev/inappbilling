@@ -3,6 +3,7 @@ package com.hypersoft.billing.dataProvider
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.QueryProductDetailsParams
+import com.hypersoft.billing.constants.SubscriptionProductIds
 
 internal class DataProviderSub {
 
@@ -15,9 +16,13 @@ internal class DataProviderSub {
      */
 
     val productIdsList = listOf(
-        "basic_product_monthly",
-        "basic_product_yearly",
-        "basic_product_lifetime"
+        SubscriptionProductIds.basicProductWeekly,
+        SubscriptionProductIds.basicProductFourWeeks,
+        SubscriptionProductIds.basicProductMonthly,
+        SubscriptionProductIds.basicProductQuarterly,
+        SubscriptionProductIds.basicProductSemiYearly,
+        SubscriptionProductIds.basicProductYearly,
+        SubscriptionProductIds.basicProductLifeTime,
     )
 
     fun getProductList(): List<QueryProductDetailsParams.Product> {

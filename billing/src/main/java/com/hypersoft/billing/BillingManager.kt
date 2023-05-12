@@ -20,6 +20,6 @@ class BillingManager(context: Context) : BillingHelper(context) {
 
     fun makeInAppPurchase(activity: Activity?, onPurchaseListener: OnPurchaseListener) = purchaseInApp(activity, onPurchaseListener)
 
-    fun makeSubPurchase(activity: Activity?, subscriptionTags: String, onPurchaseListener: OnPurchaseListener) = purchaseSub(activity, subscriptionTags, onPurchaseListener)
+    fun makeSubPurchase(activity: Activity?, subscriptionPlans: String, onPurchaseListener: OnPurchaseListener) = purchaseSub(activity, subscriptionPlans, onPurchaseListener)
 
 }

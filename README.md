@@ -110,20 +110,20 @@ billingManager.makeSubPurchase(activity, SubscriptionTags.basicMonthly, object :
 #### SubscriptionTags
 
 Add plans and tags on Play Console
-There are few subsciption tags as follow to generate any offer relevant to plans.
+There are few subsciption tags as follow, to generate plans.
 
-  Two Types of Plans
-  
-    1) basic_product_monthly
-    2) basic_product_yearly
-    3) basic_product_lifetime
-        
-        
-  Tags for both plans as follow:
-  
-    1) basic-plan-monthly
-    2) basic-plan-yearly
-    3) basic-plan-lifetime
+For Montly Subscription
+-> Product ID:          **basic_product_monthly**
+-> Plan ID:             **basic-plan-monthly**
+
+For Yearly Subscription
+-> Product ID:          **basic_product_yearly**
+-> Plan ID:             **basic-plan-yearly**
+
+For Lifetime Subscription
+-> Product ID:          **basic_product_lifetime**
+-> Plan ID:             **basic-plan-lifetime**
+
 
 # STABLE IMPLEMENTATION
 

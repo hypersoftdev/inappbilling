@@ -12,6 +12,7 @@ object SubscriptionTags {
 
     const val basicPlanMonthly = "basic-plan-monthly"
     const val basicPlanYearly = "basic-plan-yearly"
+    const val basicPlanLifeTime = "basic-plan-lifetime"
 
     /*const val basicPlanWeekly = "basic-weekly"
     const val basicPlanQuarterly = "basic-quarterly"

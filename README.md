@@ -111,25 +111,16 @@ billingManager.makeSubPurchase(SubscriptionTags.basicMonthly, object : OnPurchas
 
 Add plans and tags on Play Console
 There are few subsciption tags as follow to generate any offer relevant to plans.
-    Two Types of Plans
-        1) basic_subscription
-        2) premium_subscription
-
-    Tags for both plans as follow:
+  Two Types of Plans
+    1) basic_plan_monthly
+    2) basic_plan_yearly
         
-        1) basicWeekly,
-        2) basicBimonthly,
-        3) basicMonthly,
-        4) basicQuarterly,
-        5) basicSemiYearly,
-        6) basicYearly,
-
-        1) premiumWeekly,
-        2) premiumBimonthly,
-        3) premiumMonthly,
-        4) premiumQuarterly,
-        5) premiumSemiYearly,
-        6) premiumYearly,
+  Tags for both plans as follow:
+    1) basic-weekly
+    2) basic-monthly
+    3) basic-quarterly
+    4) basic-semi-yearly
+    5) basic-yearly
 
 # STABLE IMPLEMENTATION
 
@@ -137,9 +128,9 @@ There are few subsciption tags as follow to generate any offer relevant to plans
 
 Add inappbilling dependencies in App level build.gradle.
 ```
-    dependencies {
-                implementation 'com.github.hypersoftdev:inappbilling:1.1.6'
-    }
+dependencies {
+    implementation 'com.github.hypersoftdev:inappbilling:1.1.6'
+}
 ``` 
 
 ### Step 3
@@ -149,8 +140,8 @@ Declare BillingManger Variable, "this" can be of Application Context
 also declare your original productId
 
 ```
-    private val billingManager by lazy { BillingManager(this) }
-    private val productId:String = "Paste your original Product ID"
+private val billingManager by lazy { BillingManager(this) }
+private val productId:String = "Paste your original Product ID"
 ```  
 
 #### Billing Initializaiton
@@ -158,22 +149,21 @@ also declare your original productId
 Get debugging ids for testing using "getDebugProductIDList()" method
 
 ```
-    if (BuildConfig.DEBUG) {
-            billingManager.startConnection(billingManager.getDebugProductIDList()) { isConnectionEstablished, alreadyPurchased, message ->
-                showMessage(message)
-                if (alreadyPurchased) {
-                    // Save settings for purchased product
-                }
-            }
-        } else {
-            billingManager.startConnection(listOf(productId)) { isConnectionEstablished, alreadyPurchased, message ->
-                showMessage(message)
-                if (alreadyPurchased) {
-                    // Save settings for purchased product
-                }
-            }
+if (BuildConfig.DEBUG) {
+    billingManager.startConnection(billingManager.getDebugProductIDList()) { isConnectionEstablished, alreadyPurchased, message ->
+        showMessage(message)
+        if (alreadyPurchased) {
+            // Save settings for purchased product
         }
-
+    }
+} else {
+    billingManager.startConnection(listOf(productId)) { isConnectionEstablished, alreadyPurchased, message ->
+        showMessage(message)
+        if (alreadyPurchased) {
+            // Save settings for purchased product
+        }
+    }
+}
 ```
 #### Billing State Observer
 
@@ -181,36 +171,35 @@ observe the states of establishing connections
 
 ```
 State.billingState.observe(this) {
-            Log.d("BillingManager", "initObserver: $it")
-        }
+    Log.d("BillingManager", "initObserver: $it")
+}
 ```
 #### Purchasing InApp
 
 "this" parameter Must be a reference of an Activity
 
 ```
-   billingManager.makePurchase(this) { isSuccess, message ->
-            showMessage(message)
-        }
+billingManager.makePurchase(this) { isSuccess, message ->
+    showMessage(message)
+}
 ```
 
 #### Old Purchase
 
 ```
-    if (BuildConfig.DEBUG) {
-            billingManager.startOldPurchaseConnection(billingManager.getDebugProductIDList()) { isConnectionEstablished, alreadyPurchased, message ->
-                if (alreadyPurchased) {
-                    // Save settings for purchased product
-                }
-            }
-        } else {
-            billingManager.startOldPurchaseConnection(listOf(productId)) { isConnectionEstablished, alreadyPurchased, message ->
-                if (alreadyPurchased) {
-                    // Save settings for purchased product
-                }
-            }
+if (BuildConfig.DEBUG) {
+    billingManager.startOldPurchaseConnection(billingManager.getDebugProductIDList()) { isConnectionEstablished, alreadyPurchased, message ->
+        if (alreadyPurchased) {
+            // Save settings for purchased product
         }
-
+    }
+} else {
+    billingManager.startOldPurchaseConnection(listOf(productId)) { isConnectionEstablished, alreadyPurchased, message ->
+        if (alreadyPurchased) {
+            // Save settings for purchased product
+        }
+    }
+}
 ```
 
 #### Note
@@ -245,4 +234,3 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-

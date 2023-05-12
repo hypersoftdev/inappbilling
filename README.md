@@ -116,12 +116,14 @@ There are few subsciption tags as follow to generate any offer relevant to plans
   
     1) basic_product_monthly
     2) basic_product_yearly
+    3) basic_product_lifetime
         
         
   Tags for both plans as follow:
   
     1) basic-plan-monthly
     2) basic-plan-yearly
+    3) basic-plan-lifetime
 
 # STABLE IMPLEMENTATION
 

@@ -113,11 +113,13 @@ Add plans and tags on Play Console
 There are few subsciption tags as follow to generate any offer relevant to plans.
 
   Two Types of Plans
+  
     1) basic_product_monthly
     2) basic_product_yearly
         
         
   Tags for both plans as follow:
+  
     1) basic-plan-monthly
     2) basic-plan-yearly
 

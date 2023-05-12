@@ -10,16 +10,17 @@ package com.hypersoft.billing.status
 
 object SubscriptionTags {
 
-    const val basicWeekly = "basic-weekly"
-    const val basicMonthly = "basic-monthly"
-    const val basicQuarterly = "basic-quarterly"
-    const val basicSemiYearly = "basic-semi-yearly"
-    const val basicYearly = "basic-yearly"
+    const val basicPlanMonthly = "basic-plan-monthly"
+    const val basicPlanYearly = "basic-plan-yearly"
 
-    const val premiumWeekly = "premium-weekly"
-    const val premiumMonthly = "premium-monthly"
-    const val premiumQuarterly = "premium-quarterly"
-    const val premiumSemiYearly = "premium-semi-yearly"
-    const val premiumYearly = "premium-yearly"
+    /*const val basicPlanWeekly = "basic-weekly"
+    const val basicPlanQuarterly = "basic-quarterly"
+    const val basicPlanSemiYearly = "basic-semi-yearly"*/
+
+    /*const val premiumPlanWeekly = "premium-weekly"
+    const val premiumPlanMonthly = "premium-monthly"
+    const val premiumPlanQuarterly = "premium-quarterly"
+    const val premiumPlanSemiYearly = "premium-semi-yearly"
+    const val premiumPlanYearly = "premium-yearly"*/
 
 }

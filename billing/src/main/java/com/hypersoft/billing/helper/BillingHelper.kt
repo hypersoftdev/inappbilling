@@ -362,10 +362,10 @@ abstract class BillingHelper(private val context: Context) {
         Log.d(TAG, "purchaseSub: Starting")
 
         val indexOf = when (subscriptionTags) {
-            SubscriptionTags.basicMonthly -> 0
-            SubscriptionTags.basicYearly -> 1
-            SubscriptionTags.premiumMonthly -> 2
-            SubscriptionTags.premiumYearly -> 3
+            SubscriptionTags.basicPlanMonthly -> 0
+            SubscriptionTags.basicPlanYearly -> 1
+            /*SubscriptionTags.premiumPlanMonthly -> 2
+            SubscriptionTags.premiumYearly -> 3*/
             else -> -1
         }
         Log.d(TAG, "purchaseSub: indexOf : $indexOf")

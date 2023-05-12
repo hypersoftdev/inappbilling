@@ -20,6 +20,7 @@ import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.queryProductDetails
 import com.hypersoft.billing.constants.SubscriptionPlans
+import com.hypersoft.billing.constants.SubscriptionProductIds
 import com.hypersoft.billing.dataProvider.DataProviderInApp
 import com.hypersoft.billing.dataProvider.DataProviderSub
 import com.hypersoft.billing.enums.BillingState
@@ -364,22 +365,22 @@ abstract class BillingHelper(private val context: Context) {
         var prodDetails: ProductDetails? = null
 
         dataProviderSub.getProductDetailsList().forEach { productDetails ->
-            if (productDetails.productId == SubscriptionPlans.basicPlanWeekly && subscriptionPlans == SubscriptionPlans.basicPlanWeekly) {
+            if (productDetails.productId == SubscriptionProductIds.basicProductWeekly && subscriptionPlans == SubscriptionPlans.basicPlanWeekly) {
                 prodDetails = productDetails
                 return@forEach
-            } else if (productDetails.productId == SubscriptionPlans.basicPlanFourWeeks && subscriptionPlans == SubscriptionPlans.basicPlanFourWeeks) {
+            } else if (productDetails.productId == SubscriptionProductIds.basicProductFourWeeks && subscriptionPlans == SubscriptionPlans.basicPlanFourWeeks) {
                 prodDetails = productDetails
                 return@forEach
-            } else if (productDetails.productId == SubscriptionPlans.basicPlanMonthly && subscriptionPlans == SubscriptionPlans.basicPlanMonthly) {
+            } else if (productDetails.productId == SubscriptionProductIds.basicProductMonthly && subscriptionPlans == SubscriptionPlans.basicPlanMonthly) {
                 prodDetails = productDetails
                 return@forEach
-            } else if (productDetails.productId == SubscriptionPlans.basicPlanQuarterly && subscriptionPlans == SubscriptionPlans.basicPlanQuarterly) {
+            } else if (productDetails.productId == SubscriptionProductIds.basicProductQuarterly && subscriptionPlans == SubscriptionPlans.basicPlanQuarterly) {
                 prodDetails = productDetails
                 return@forEach
-            } else if (productDetails.productId == SubscriptionPlans.basicPlanSemiYearly && subscriptionPlans == SubscriptionPlans.basicPlanSemiYearly) {
+            } else if (productDetails.productId == SubscriptionProductIds.basicProductSemiYearly && subscriptionPlans == SubscriptionPlans.basicPlanSemiYearly) {
                 prodDetails = productDetails
                 return@forEach
-            } else if (productDetails.productId == SubscriptionPlans.basicPlanYearly && subscriptionPlans == SubscriptionPlans.basicPlanYearly) {
+            } else if (productDetails.productId == SubscriptionProductIds.basicProductYearly && subscriptionPlans == SubscriptionPlans.basicPlanYearly) {
                 prodDetails = productDetails
                 return@forEach
             }

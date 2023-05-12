@@ -72,11 +72,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun onPurchaseClick() {
         // In-App
-        billingManager.makeInAppPurchase(this, object : OnPurchaseListener {
+        /*billingManager.makeInAppPurchase(this, object : OnPurchaseListener {
             override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
                 showMessage(message)
             }
-        })
+        })*/
 
         // Subscription
         billingManager.makeSubPurchase(this, SubscriptionTags.basicMonthly, object : OnPurchaseListener {

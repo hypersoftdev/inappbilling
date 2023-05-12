@@ -16,7 +16,8 @@ internal class DataProviderSub {
 
     val productIdsList = listOf(
         "basic_product_monthly",
-        "basic_product_yearly"
+        "basic_product_yearly",
+        "basic_product_lifetime"
     )
 
     fun getProductList(): List<QueryProductDetailsParams.Product> {

@@ -113,14 +113,17 @@ Add plans and tags on Play Console
 There are few subsciption tags as follow, to generate plans.
 
 For Montly Subscription
+
 -> Product ID:          **basic_product_monthly**
 -> Plan ID:             **basic-plan-monthly**
 
 For Yearly Subscription
+
 -> Product ID:          **basic_product_yearly**
 -> Plan ID:             **basic-plan-yearly**
 
 For Lifetime Subscription
+
 -> Product ID:          **basic_product_lifetime**
 -> Plan ID:             **basic-plan-lifetime**
 

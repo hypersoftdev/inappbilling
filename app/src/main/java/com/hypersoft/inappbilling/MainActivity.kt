@@ -9,7 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.hypersoft.billing.BillingManager
 import com.hypersoft.billing.interfaces.OnPurchaseListener
 import com.hypersoft.billing.status.State
-import com.hypersoft.billing.status.SubscriptionTags
+import com.hypersoft.billing.constants.SubscriptionPlans
 import dev.epegasus.billinginapppurchases.interfaces.OnConnectionListener
 
 class MainActivity : AppCompatActivity() {
@@ -79,7 +79,7 @@ class MainActivity : AppCompatActivity() {
         })*/
 
         // Subscription
-        billingManager.makeSubPurchase(this, SubscriptionTags.basicPlanMonthly, object : OnPurchaseListener {
+        billingManager.makeSubPurchase(this, SubscriptionPlans.basicPlanMonthly, object : OnPurchaseListener {
             override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
                 showMessage(message)
             }

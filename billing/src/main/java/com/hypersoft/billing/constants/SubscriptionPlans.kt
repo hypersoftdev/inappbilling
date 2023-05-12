@@ -1,4 +1,4 @@
-package com.hypersoft.billing.status
+package com.hypersoft.billing.constants
 
 /**
  * @Author: SOHAIB AHMED
@@ -8,15 +8,15 @@ package com.hypersoft.billing.status
  *      -> https://stackoverflow.com/users/20440272/sohaib-ahmed
  */
 
-object SubscriptionTags {
+object SubscriptionPlans {
 
+    const val basicPlanWeekly = "basic-plan-weekly"
+    const val basicPlanFourWeeks = "basic-plan-four-weeks"
     const val basicPlanMonthly = "basic-plan-monthly"
+    const val basicPlanQuarterly = "basic-plan-quarterly"
+    const val basicPlanSemiYearly = "basic-plan-semi-yearly"
     const val basicPlanYearly = "basic-plan-yearly"
     const val basicPlanLifeTime = "basic-plan-lifetime"
-
-    /*const val basicPlanWeekly = "basic-weekly"
-    const val basicPlanQuarterly = "basic-quarterly"
-    const val basicPlanSemiYearly = "basic-semi-yearly"*/
 
     /*const val premiumPlanWeekly = "premium-weekly"
     const val premiumPlanMonthly = "premium-monthly"

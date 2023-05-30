@@ -99,7 +99,7 @@ billingManager.makeInAppPurchase(activity, object : OnPurchaseListener {
 #### Purchasing Subscription
 
 ```
-billingManager.makeSubPurchase(activity, SubscriptionTags.basicMonthly, object : OnPurchaseListener {
+billingManager.makeSubPurchase(activity, SubscriptionTags.basicPlanMonthly, object : OnPurchaseListener {
     override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
         Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
         binding.mbMakePurchase.isEnabled = !isPurchaseSuccess
@@ -122,10 +122,10 @@ For Yearly Subscription
     -> Product ID:          basic_product_yearly
     -> Plan ID:             basic-plan-yearly
 
-For Lifetime Subscription
+For 06 Months Subscription
 
-    -> Product ID:          basic_product_lifetime
-    -> Plan ID:             basic-plan-lifetime
+    -> Product ID:          basic_product_semi_yearly
+    -> Plan ID:             basic-plan-semi-yearly
 
 
 # STABLE IMPLEMENTATION

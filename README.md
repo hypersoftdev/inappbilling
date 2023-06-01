@@ -99,7 +99,7 @@ billingManager.makeInAppPurchase(activity, object : OnPurchaseListener {
 #### Purchasing Subscription
 
 ```
-billingManager.makeSubPurchase(activity, SubscriptionTags.basicPlanMonthly, object : OnPurchaseListener {
+billingManager.makeSubPurchase(activity, SubscriptionPlans.basicPlanMonthly, object : OnPurchaseListener {
     override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
         Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
         binding.mbMakePurchase.isEnabled = !isPurchaseSuccess

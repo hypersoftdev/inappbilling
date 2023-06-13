@@ -7,6 +7,8 @@ import android.net.NetworkCapabilities
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.AcknowledgePurchaseResponseListener
 import com.android.billingclient.api.BillingClient
@@ -21,6 +23,8 @@ import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.queryProductDetails
 import com.hypersoft.billing.constants.SubscriptionPlans
 import com.hypersoft.billing.constants.SubscriptionProductIds
+import com.hypersoft.billing.dataClasses.ProductDetail
+import com.hypersoft.billing.enums.ProductType
 import com.hypersoft.billing.dataProvider.DataProviderInApp
 import com.hypersoft.billing.dataProvider.DataProviderSub
 import com.hypersoft.billing.enums.BillingState
@@ -46,6 +50,12 @@ abstract class BillingHelper(private val context: Context) {
 
     @JvmField
     protected var checkForSubscription = false
+
+    private val _productDetailList = ArrayList<ProductDetail>()
+    private val productDetailList: List<ProductDetail> get() = _productDetailList.toList()
+
+    private val _productDetailsLiveData = MutableLiveData<List<ProductDetail>>()
+    val productDetailsLiveData: LiveData<List<ProductDetail>> = _productDetailsLiveData
 
     /* ------------------------------------------------ Initializations ------------------------------------------------ */
 
@@ -181,6 +191,17 @@ abstract class BillingHelper(private val context: Context) {
             if (productDetailsResult.productDetailsList.isNullOrEmpty()) {
                 setBillingState(BillingState.CONSOLE_PRODUCTS_IN_APP_NOT_EXIST)
             } else {
+                productDetailsResult.productDetailsList?.forEach {
+                    val item = ProductDetail()
+                    item.productId = it.productId
+                    item.price = it.oneTimePurchaseOfferDetails?.formattedPrice.toString().removeSuffix(".00")
+                    item.currencyCode = it.oneTimePurchaseOfferDetails?.priceCurrencyCode.toString()
+                    item.productType = ProductType.INAPP
+                    item.priceAmountMicros = it.oneTimePurchaseOfferDetails?.priceAmountMicros ?: 0L
+
+                    _productDetailList.add(item)
+                    _productDetailsLiveData.postValue(productDetailList)
+                }
                 dataProviderInApp.setProductDetailsList(productDetailsResult.productDetailsList!!)
                 setBillingState(BillingState.CONSOLE_PRODUCTS_IN_APP_AVAILABLE)
             }
@@ -200,7 +221,33 @@ abstract class BillingHelper(private val context: Context) {
             if (productDetailsResult.productDetailsList.isNullOrEmpty()) {
                 setBillingState(BillingState.CONSOLE_PRODUCTS_SUB_NOT_EXIST)
             } else {
-                Log.d(TAG, "queryForAvailableSubProducts: ${productDetailsResult.productDetailsList}")
+                productDetailsResult.productDetailsList?.forEach { productDetails ->
+                    if (!productDetails.subscriptionOfferDetails.isNullOrEmpty()) {
+                        val purchaseList = productDetails.subscriptionOfferDetails!![0].pricingPhases.pricingPhaseList
+
+                        val item = ProductDetail()
+                        item.productId = productDetails.productId
+
+                        purchaseList.forEach { temp ->
+                            if (temp.priceAmountMicros == 0L) {
+                                item.freeTrial = true
+                                item.freeTrialPeriod = when (temp.billingPeriod) {
+                                    "P3D" -> 3
+                                    "P5D" -> 5
+                                    "P7D" -> 7
+                                    "P1M" -> 30
+                                    else -> 1
+                                }
+                            } else {
+                                item.currencyCode = temp.priceCurrencyCode
+                                item.price = temp.formattedPrice.removeSuffix(".00")
+                                item.priceAmountMicros = temp.priceAmountMicros
+                            }
+                        }
+                        _productDetailList.add(item)
+                    }
+                }
+                _productDetailsLiveData.postValue(productDetailList)
                 dataProviderSub.setProductDetailsList(productDetailsResult.productDetailsList!!)
                 setBillingState(BillingState.CONSOLE_PRODUCTS_SUB_AVAILABLE)
             }

@@ -7,9 +7,12 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.hypersoft.billing.BillingManager
+import com.hypersoft.billing.constants.SubscriptionPlans
+import com.hypersoft.billing.constants.SubscriptionProductIds
+import com.hypersoft.billing.dataClasses.ProductDetail
+import com.hypersoft.billing.helper.BillingHelper.Companion.TAG
 import com.hypersoft.billing.interfaces.OnPurchaseListener
 import com.hypersoft.billing.status.State
-import com.hypersoft.billing.constants.SubscriptionPlans
 import dev.epegasus.billinginapppurchases.interfaces.OnConnectionListener
 
 class MainActivity : AppCompatActivity() {
@@ -37,6 +40,42 @@ class MainActivity : AppCompatActivity() {
         State.billingState.observe(this) {
             Log.d("BillingManager", "initObserver: $it")
             tvTitle.text = it.toString()
+        }
+
+        //Observe Your Products
+        billingManager.productDetailsLiveData.observe(this) { list ->
+            var month = 0L
+            var year = 0L
+            list.forEach { productDetail: ProductDetail ->
+                Log.d(TAG, "initObservers: $productDetail")
+                when (productDetail.productId) {
+                    SubscriptionProductIds.basicProductMonthly -> {
+                        //binding.mtvOfferPrice1.text = productDetail.price
+                        month = productDetail.priceAmountMicros / 1000000
+                    }
+
+                    SubscriptionProductIds.basicProductYearly -> {
+                        //binding.mtvOfferPrice2.text = productDetail.price
+                        year = productDetail.priceAmountMicros / 1000000
+                    }
+
+                    SubscriptionProductIds.basicProductSemiYearly -> {
+                        //binding.mtvOfferPrice3Premium.text = productDetail.price
+                    }
+
+                    productId -> {
+                        //binding.mtvOfferPrice3Premium.text = productDetail.price
+                    }
+                }
+            }
+            // Best Offer
+            if (month == 0L || year == 0L) return@observe
+            val result = 100 - (year * 100 / (12 * month))
+            val text = "Save $result%"
+            //binding.mtvBestOffer.text = text
+
+            val perMonth = (year / 12L).toString()
+            //binding.mtvOffer.text = perMonth
         }
     }
 

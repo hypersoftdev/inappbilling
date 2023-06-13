@@ -128,6 +128,58 @@ For 06 Months Subscription
     -> Plan ID:             basic-plan-semi-yearly
 
 
+### Observe Dynamic Pricing
+
+The model class for `ProductDetail`
+
+    data class ProductDetail(
+        var productId: String,
+        var price: String,
+        var currencyCode: String,
+        var freeTrialPeriod: Int,
+        var priceAmountMicros: Long = 0,
+        var freeTrial: Boolean = false,
+        var productType: ProductType = ProductType.SUBS
+    )
+
+Following observer observes all the active subscription and in-App Product
+
+    billingManager.productDetailsLiveData.observe(this) { list ->
+        var month = 0L
+        var year = 0L
+        list.forEach { productDetail: ProductDetail ->
+            Log.d(TAG, "initObservers: $productDetail")
+            when (productDetail.productId) {
+                SubscriptionProductIds.basicProductMonthly -> {
+                    //binding.mtvOfferPrice1.text = productDetail.price
+                    month = productDetail.priceAmountMicros / 1000000
+                }
+
+                SubscriptionProductIds.basicProductYearly -> {
+                    //binding.mtvOfferPrice2.text = productDetail.price
+                    year = productDetail.priceAmountMicros / 1000000
+                }
+
+                SubscriptionProductIds.basicProductSemiYearly -> {
+                    //binding.mtvOfferPrice3Premium.text = productDetail.price
+                }
+
+                productId -> {
+                    //binding.mtvOfferPrice3Premium.text = productDetail.price
+                }
+            }
+        }
+        // Best Offer
+        if (month == 0L || year == 0L) return@observe
+        val result = 100 - (year * 100 / (12 * month))
+        val text = "Save $result%"
+        //binding.mtvBestOffer.text = text
+
+        val perMonth = (year / 12L).toString()
+        //binding.mtvOffer.text = perMonth
+    }
+
+
 # STABLE IMPLEMENTATION
 
 ### Step 2

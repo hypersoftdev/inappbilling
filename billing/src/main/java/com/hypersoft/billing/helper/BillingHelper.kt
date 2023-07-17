@@ -24,10 +24,10 @@ import com.android.billingclient.api.queryProductDetails
 import com.hypersoft.billing.constants.SubscriptionPlans
 import com.hypersoft.billing.constants.SubscriptionProductIds
 import com.hypersoft.billing.dataClasses.ProductDetail
-import com.hypersoft.billing.enums.ProductType
 import com.hypersoft.billing.dataProvider.DataProviderInApp
 import com.hypersoft.billing.dataProvider.DataProviderSub
 import com.hypersoft.billing.enums.BillingState
+import com.hypersoft.billing.enums.ProductType
 import com.hypersoft.billing.interfaces.OnPurchaseListener
 import com.hypersoft.billing.status.State.getBillingState
 import com.hypersoft.billing.status.State.setBillingState
@@ -134,40 +134,46 @@ abstract class BillingHelper(private val context: Context) {
                     setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_NOT_FOUND)
                     return@forEach
                 }
+
+                // Not Purchased
+                if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED) {
+                    setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_NOT_OWNED)
+                    return@forEach
+                }
                 // getting the  single  product-id of every purchase in the list = sku
                 val compareSKU = purchase.products[0]
 
-                if (purchase.isAcknowledged) {
-                    dataProviderInApp.getProductIdsList().forEach {
-                        if (it.contains(compareSKU, true)) {
-                            setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_OWNED)
-                            Handler(Looper.getMainLooper()).post {
-                                isPurchasedFound = true
-                                onConnectionListener?.onOldPurchaseResult(true)
-                            }
-                        }
-                    }
-                } else {
-                    if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-                        for (i in 0 until dataProviderInApp.getProductIdsList().size) {
-                            setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_OWNED_BUT_NOT_ACKNOWLEDGE)
-
-                            val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder()
-                                .setPurchaseToken(purchase.purchaseToken)
-                                .build()
-
-                            billingClient.acknowledgePurchase(acknowledgePurchaseParams) { billingResult: BillingResult ->
-                                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK || purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-                                    setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_OWNED_AND_ACKNOWLEDGE)
+                    if (purchase.isAcknowledged) {
+                        dataProviderInApp.getProductIdsList().forEach {
+                            if (it.contains(compareSKU, true)) {
+                                setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_OWNED)
+                                Handler(Looper.getMainLooper()).post {
                                     isPurchasedFound = true
                                     onConnectionListener?.onOldPurchaseResult(true)
-                                } else {
-                                    setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_OWNED_AND_FAILED_TO_ACKNOWLEDGE)
+                                }
+                            }
+                        }
+                    } else {
+                        if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
+                            for (i in 0 until dataProviderInApp.getProductIdsList().size) {
+                                setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_OWNED_BUT_NOT_ACKNOWLEDGE)
+
+                                val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder()
+                                    .setPurchaseToken(purchase.purchaseToken)
+                                    .build()
+
+                                billingClient.acknowledgePurchase(acknowledgePurchaseParams) { billingResult: BillingResult ->
+                                    if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
+                                        setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_OWNED_AND_ACKNOWLEDGE)
+                                        isPurchasedFound = true
+                                        onConnectionListener?.onOldPurchaseResult(true)
+                                    } else {
+                                        setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_OWNED_AND_FAILED_TO_ACKNOWLEDGE)
+                                    }
                                 }
                             }
                         }
                     }
-                }
             }
             if (purchases.isEmpty()) {
                 setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_NOT_FOUND)
@@ -292,7 +298,10 @@ abstract class BillingHelper(private val context: Context) {
                         for (i in 0 until dataProviderSub.productIdsList.size) {
                             if (dataProviderSub.productIdsList[i].contains(compareSKU)) {
                                 setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_SUB_OWNED)
-                                onConnectionListener?.onOldPurchaseResult(true)
+
+                                if (purchase.purchaseState == 1)
+                                    onConnectionListener?.onOldPurchaseResult(true)
+
                                 return@forEach
                             }
                         }

@@ -169,6 +169,7 @@ billingManager.productDetailsLiveData.observe(this) { list ->
     val perMonth = (year / 12L).toString()
     //binding.mtvOffer.text = perMonth
 }
+```
 
 # LICENSE
 

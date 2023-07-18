@@ -32,14 +32,14 @@ dependencies {
 
 Declare BillingManger Variable, "this" can be an application context.
 
-also declare your original productId
+also declare your original productId e.g. packageName
 
 ```
 private val billingManager by lazy { BillingManager(this) }
 private val productId:String = "Paste your original Product ID"
 ```  
 
-#### Enable Subscription Check
+#### Enable Subscription Check for Old Purchases
 
 ```
 billingManager.setCheckForSubscription(true)
@@ -50,42 +50,30 @@ billingManager.setCheckForSubscription(true)
 Get debugging ids for testing using "getDebugProductIDList()" method
 
 ```
-if (BuildConfig.DEBUG) {
-    billingManager.startConnection(billingManager.getDebugProductIDList(), object : OnConnectionListener {
-        override fun onConnectionResult(isSuccess: Boolean, message: String) {
-            binding.mbMakePurchase.isEnabled = isSuccess
-            Log.d("TAG", "onConnectionResult: $isSuccess - $message")
+        val productId = when (BuildConfig.DEBUG) {
+            true -> diComponent.billingManager.getDebugProductIDList()
+            false -> listOf(globalContext.packageName)
         }
 
-        override fun onOldPurchaseResult(isPurchased: Boolean) {
-            // Update your shared-preferences here!
-            Log.d("TAG", "onOldPurchaseResult: $isPurchased")
-        }
-    })
-} else {
-    billingManager.startConnection(listOf(packageName), object : OnConnectionListener {
-        override fun onConnectionResult(isSuccess: Boolean, message: String) {
-            Log.d("TAG", "onConnectionResult: $isSuccess - $message")
-        }
+        diComponent.billingManager.startConnection(productId, object : OnConnectionListener {
+            override fun onConnectionResult(isSuccess: Boolean, message: String) {
+                Log.d("TAG", "onConnectionResult: $isSuccess - $message")
+                binding.mbMakePurchase.isEnabled = isSuccess
+            }
 
-        override fun onOldPurchaseResult(isPurchased: Boolean) {
-            // Update your shared-preferences here!
-            Log.d("TAG", "onOldPurchaseResult: $isPurchased")
-        }
-    })
-}
+            override fun onOldPurchaseResult(isPurchased: Boolean) {
+                // Update your shared-preferences here!
+                Log.d("TAG", "onOldPurchaseResult: $isPurchased")
+            }
+        })
+
 
 ```
 #### Billing State Observer
 
-observe the states of establishing connections
+Observe the states by using `BillingManager` TAG
 
-```
-State.billingState.observe(this) {
-    Log.d("BillingManager", "initObserver: $it")
-}
-```
-#### Purchasing InApp
+### Purchasing InApp
 
 ```
 billingManager.makeInAppPurchase(activity, object : OnPurchaseListener {
@@ -96,7 +84,7 @@ billingManager.makeInAppPurchase(activity, object : OnPurchaseListener {
 })
 ```
 
-#### Purchasing Subscription
+### Purchasing Subscription & Observe
 
 ```
 billingManager.makeSubPurchase(activity, SubscriptionPlans.basicPlanMonthly, object : OnPurchaseListener {
@@ -178,104 +166,6 @@ Following observer observes all the active subscription and in-App Product
         val perMonth = (year / 12L).toString()
         //binding.mtvOffer.text = perMonth
     }
-
-
-# STABLE IMPLEMENTATION
-
-### Step 2
-
-Add inappbilling dependencies in App level build.gradle.
-```
-dependencies {
-    implementation 'com.github.hypersoftdev:inappbilling:1.1.6'
-}
-``` 
-
-### Step 3
-
-Declare BillingManger Variable, "this" can be of Application Context
-
-also declare your original productId
-
-```
-private val billingManager by lazy { BillingManager(this) }
-private val productId:String = "Paste your original Product ID"
-```  
-
-#### Billing Initializaiton
-
-Get debugging ids for testing using "getDebugProductIDList()" method
-
-```
-if (BuildConfig.DEBUG) {
-    billingManager.startConnection(billingManager.getDebugProductIDList()) { isConnectionEstablished, alreadyPurchased, message ->
-        showMessage(message)
-        if (alreadyPurchased) {
-            // Save settings for purchased product
-        }
-    }
-} else {
-    billingManager.startConnection(listOf(productId)) { isConnectionEstablished, alreadyPurchased, message ->
-        showMessage(message)
-        if (alreadyPurchased) {
-            // Save settings for purchased product
-        }
-    }
-}
-```
-#### Billing State Observer
-
-observe the states of establishing connections
-
-```
-State.billingState.observe(this) {
-    Log.d("BillingManager", "initObserver: $it")
-}
-```
-#### Purchasing InApp
-
-"this" parameter Must be a reference of an Activity
-
-```
-billingManager.makePurchase(this) { isSuccess, message ->
-    showMessage(message)
-}
-```
-
-#### Old Purchase
-
-```
-if (BuildConfig.DEBUG) {
-    billingManager.startOldPurchaseConnection(billingManager.getDebugProductIDList()) { isConnectionEstablished, alreadyPurchased, message ->
-        if (alreadyPurchased) {
-            // Save settings for purchased product
-        }
-    }
-} else {
-    billingManager.startOldPurchaseConnection(listOf(productId)) { isConnectionEstablished, alreadyPurchased, message ->
-        if (alreadyPurchased) {
-            // Save settings for purchased product
-        }
-    }
-}
-```
-
-#### Note
-Here is the list of debuging product ids, can be test every state of billing
-
-```
-"android.test.purchased"
-"android.test.item_unavailable"
-"android.test.refunded"
-"android.test.canceled"
-```
-
-can be found here
-
-```
-billingManager.getDebugProductIDList()
-billingManager.getDebugProductIDsList()
-```
 
 # LICENSE
 

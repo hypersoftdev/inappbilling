@@ -32,14 +32,14 @@ dependencies {
 
 Declare BillingManger Variable, "this" can be an application context.
 
-also declare your original productId
+also declare your original productId e.g. packageName
 
 ```
 private val billingManager by lazy { BillingManager(this) }
 private val productId:String = "Paste your original Product ID"
 ```  
 
-#### Enable Subscription Check
+#### Enable Subscription Check for Old Purchases
 
 ```
 billingManager.setCheckForSubscription(true)
@@ -50,42 +50,30 @@ billingManager.setCheckForSubscription(true)
 Get debugging ids for testing using "getDebugProductIDList()" method
 
 ```
-if (BuildConfig.DEBUG) {
-    billingManager.startConnection(billingManager.getDebugProductIDList(), object : OnConnectionListener {
-        override fun onConnectionResult(isSuccess: Boolean, message: String) {
-            binding.mbMakePurchase.isEnabled = isSuccess
-            Log.d("TAG", "onConnectionResult: $isSuccess - $message")
-        }
-
-        override fun onOldPurchaseResult(isPurchased: Boolean) {
-            // Update your shared-preferences here!
-            Log.d("TAG", "onOldPurchaseResult: $isPurchased")
-        }
-    })
-} else {
-    billingManager.startConnection(listOf(packageName), object : OnConnectionListener {
-        override fun onConnectionResult(isSuccess: Boolean, message: String) {
-            Log.d("TAG", "onConnectionResult: $isSuccess - $message")
-        }
-
-        override fun onOldPurchaseResult(isPurchased: Boolean) {
-            // Update your shared-preferences here!
-            Log.d("TAG", "onOldPurchaseResult: $isPurchased")
-        }
-    })
+val productId = when (BuildConfig.DEBUG) {
+    true -> diComponent.billingManager.getDebugProductIDList()
+    false -> listOf(globalContext.packageName)
 }
+
+diComponent.billingManager.startConnection(productId, object : OnConnectionListener {
+    override fun onConnectionResult(isSuccess: Boolean, message: String) {
+        Log.d("TAG", "onConnectionResult: $isSuccess - $message")
+        binding.mbMakePurchase.isEnabled = isSuccess
+    }
+
+    override fun onOldPurchaseResult(isPurchased: Boolean) {
+        // Update your shared-preferences here!
+        Log.d("TAG", "onOldPurchaseResult: $isPurchased")
+    }
+})
+
 
 ```
 #### Billing State Observer
 
-observe the states of establishing connections
+Observe the states by using `BillingManager` TAG
 
-```
-State.billingState.observe(this) {
-    Log.d("BillingManager", "initObserver: $it")
-}
-```
-#### Purchasing InApp
+### Purchasing InApp
 
 ```
 billingManager.makeInAppPurchase(activity, object : OnPurchaseListener {
@@ -96,7 +84,7 @@ billingManager.makeInAppPurchase(activity, object : OnPurchaseListener {
 })
 ```
 
-#### Purchasing Subscription
+### Purchasing Subscription & Observe
 
 ```
 billingManager.makeSubPurchase(activity, SubscriptionPlans.basicPlanMonthly, object : OnPurchaseListener {
@@ -132,149 +120,55 @@ For 06 Months Subscription
 
 The model class for `ProductDetail`
 
-    data class ProductDetail(
-        var productId: String,
-        var price: String,
-        var currencyCode: String,
-        var freeTrialPeriod: Int,
-        var priceAmountMicros: Long = 0,
-        var freeTrial: Boolean = false,
-        var productType: ProductType = ProductType.SUBS
-    )
+```
+data class ProductDetail(
+    var productId: String,
+    var price: String,
+    var currencyCode: String,
+    var freeTrialPeriod: Int,
+    var priceAmountMicros: Long = 0,
+    var freeTrial: Boolean = false,
+    var productType: ProductType = ProductType.SUBS
+)
+```
 
 Following observer observes all the active subscription and in-App Product
 
-    billingManager.productDetailsLiveData.observe(this) { list ->
-        var month = 0L
-        var year = 0L
-        list.forEach { productDetail: ProductDetail ->
-            Log.d(TAG, "initObservers: $productDetail")
-            when (productDetail.productId) {
-                SubscriptionProductIds.basicProductMonthly -> {
-                    //binding.mtvOfferPrice1.text = productDetail.price
-                    month = productDetail.priceAmountMicros / 1000000
-                }
+```
+billingManager.productDetailsLiveData.observe(this) { list ->
+    var month = 0L
+    var year = 0L
+    list.forEach { productDetail: ProductDetail ->
+        Log.d(TAG, "initObservers: $productDetail")
+        when (productDetail.productId) {
+            SubscriptionProductIds.basicProductMonthly -> {
+                //binding.mtvOfferPrice1.text = productDetail.price
+                month = productDetail.priceAmountMicros / 1000000
+            }
 
-                SubscriptionProductIds.basicProductYearly -> {
-                    //binding.mtvOfferPrice2.text = productDetail.price
-                    year = productDetail.priceAmountMicros / 1000000
-                }
+            SubscriptionProductIds.basicProductYearly -> {
+                //binding.mtvOfferPrice2.text = productDetail.price
+                year = productDetail.priceAmountMicros / 1000000
+            }
 
-                SubscriptionProductIds.basicProductSemiYearly -> {
-                    //binding.mtvOfferPrice3Premium.text = productDetail.price
-                }
+            SubscriptionProductIds.basicProductSemiYearly -> {
+                //binding.mtvOfferPrice3Premium.text = productDetail.price
+            }
 
-                productId -> {
-                    //binding.mtvOfferPrice3Premium.text = productDetail.price
-                }
+            productId -> {
+                //binding.mtvOfferPrice3Premium.text = productDetail.price
             }
         }
-        // Best Offer
-        if (month == 0L || year == 0L) return@observe
-        val result = 100 - (year * 100 / (12 * month))
-        val text = "Save $result%"
-        //binding.mtvBestOffer.text = text
-
-        val perMonth = (year / 12L).toString()
-        //binding.mtvOffer.text = perMonth
     }
+    // Best Offer
+    if (month == 0L || year == 0L) return@observe
+    val result = 100 - (year * 100 / (12 * month))
+    val text = "Save $result%"
+    //binding.mtvBestOffer.text = text
 
-
-# STABLE IMPLEMENTATION
-
-### Step 2
-
-Add inappbilling dependencies in App level build.gradle.
-```
-dependencies {
-    implementation 'com.github.hypersoftdev:inappbilling:1.1.6'
+    val perMonth = (year / 12L).toString()
+    //binding.mtvOffer.text = perMonth
 }
-``` 
-
-### Step 3
-
-Declare BillingManger Variable, "this" can be of Application Context
-
-also declare your original productId
-
-```
-private val billingManager by lazy { BillingManager(this) }
-private val productId:String = "Paste your original Product ID"
-```  
-
-#### Billing Initializaiton
-
-Get debugging ids for testing using "getDebugProductIDList()" method
-
-```
-if (BuildConfig.DEBUG) {
-    billingManager.startConnection(billingManager.getDebugProductIDList()) { isConnectionEstablished, alreadyPurchased, message ->
-        showMessage(message)
-        if (alreadyPurchased) {
-            // Save settings for purchased product
-        }
-    }
-} else {
-    billingManager.startConnection(listOf(productId)) { isConnectionEstablished, alreadyPurchased, message ->
-        showMessage(message)
-        if (alreadyPurchased) {
-            // Save settings for purchased product
-        }
-    }
-}
-```
-#### Billing State Observer
-
-observe the states of establishing connections
-
-```
-State.billingState.observe(this) {
-    Log.d("BillingManager", "initObserver: $it")
-}
-```
-#### Purchasing InApp
-
-"this" parameter Must be a reference of an Activity
-
-```
-billingManager.makePurchase(this) { isSuccess, message ->
-    showMessage(message)
-}
-```
-
-#### Old Purchase
-
-```
-if (BuildConfig.DEBUG) {
-    billingManager.startOldPurchaseConnection(billingManager.getDebugProductIDList()) { isConnectionEstablished, alreadyPurchased, message ->
-        if (alreadyPurchased) {
-            // Save settings for purchased product
-        }
-    }
-} else {
-    billingManager.startOldPurchaseConnection(listOf(productId)) { isConnectionEstablished, alreadyPurchased, message ->
-        if (alreadyPurchased) {
-            // Save settings for purchased product
-        }
-    }
-}
-```
-
-#### Note
-Here is the list of debuging product ids, can be test every state of billing
-
-```
-"android.test.purchased"
-"android.test.item_unavailable"
-"android.test.refunded"
-"android.test.canceled"
-```
-
-can be found here
-
-```
-billingManager.getDebugProductIDList()
-billingManager.getDebugProductIDsList()
 ```
 
 # LICENSE

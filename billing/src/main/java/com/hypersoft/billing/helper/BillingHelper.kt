@@ -90,6 +90,7 @@ abstract class BillingHelper(private val context: Context) {
 
         if (billingClient.isReady) {
             setBillingState(BillingState.CONNECTION_ALREADY_ESTABLISHING)
+            proceedBilling()
             return
         }
 
@@ -104,17 +105,21 @@ abstract class BillingHelper(private val context: Context) {
             override fun onBillingSetupFinished(billingResult: BillingResult) {
                 val isBillingReady = billingResult.responseCode == BillingClient.BillingResponseCode.OK
                 if (isBillingReady) {
-                    setBillingState(BillingState.CONNECTION_ESTABLISHED)
-                    getInAppOldPurchases()
-                    Handler(Looper.getMainLooper()).post {
-                        onConnectionListener.onConnectionResult(true, BillingState.CONNECTION_ESTABLISHED.message)
-                    }
+                    proceedBilling()
                 } else {
                     setBillingState(BillingState.CONNECTION_FAILED)
                     onConnectionListener.onConnectionResult(false, billingResult.debugMessage)
                 }
             }
         })
+    }
+
+    private fun proceedBilling() {
+        setBillingState(BillingState.CONNECTION_ESTABLISHED)
+        getInAppOldPurchases()
+        Handler(Looper.getMainLooper()).post {
+            onConnectionListener?.onConnectionResult(true, BillingState.CONNECTION_ESTABLISHED.message)
+        }
     }
 
     private fun getInAppOldPurchases() = CoroutineScope(Dispatchers.Main).launch {

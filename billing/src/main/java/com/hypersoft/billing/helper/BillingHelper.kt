@@ -126,7 +126,9 @@ abstract class BillingHelper(private val context: Context) {
         setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_FETCHING)
         val queryPurchasesParams = QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build()
         billingClient.queryPurchasesAsync(queryPurchasesParams) { _, purchases ->
-            onConnectionListener?.onOldPurchaseResult(false)
+            CoroutineScope(Dispatchers.Main).launch {
+                onConnectionListener?.onOldPurchaseResult(false)
+            }
 
             Log.d(TAG, " --------------------------- old purchase (In-App)  --------------------------- ")
             Log.d(TAG, "getInAppOldPurchases: Object: $purchases")
@@ -150,7 +152,9 @@ abstract class BillingHelper(private val context: Context) {
                             setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_OWNED)
                             Handler(Looper.getMainLooper()).post {
                                 isPurchasedFound = true
-                                onConnectionListener?.onOldPurchaseResult(true)
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    onConnectionListener?.onOldPurchaseResult(true)
+                                }
                             }
                         }
                     }
@@ -167,7 +171,9 @@ abstract class BillingHelper(private val context: Context) {
                                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK || purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
                                     setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_OWNED_AND_ACKNOWLEDGE)
                                     isPurchasedFound = true
-                                    onConnectionListener?.onOldPurchaseResult(true)
+                                    CoroutineScope(Dispatchers.Main).launch {
+                                        onConnectionListener?.onOldPurchaseResult(true)
+                                    }
                                 } else {
                                     setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_OWNED_AND_FAILED_TO_ACKNOWLEDGE)
                                 }
@@ -198,10 +204,12 @@ abstract class BillingHelper(private val context: Context) {
 
         billingClient.queryPurchasesAsync(queryPurchasesParams) { billingResult, purchases ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                onConnectionListener?.onOldPurchaseResult(false)
+                CoroutineScope(Dispatchers.Main).launch {
+                    onConnectionListener?.onOldPurchaseResult(false)
+                }
 
                 Log.d(TAG, " --------------------------- old purchase (Sub)   --------------------------- ")
-                Log.d(TAG, "getSubscriptionOldPurchases: Object: $purchases")
+                Log.d(TAG, "getSubscriptionOldPurchases: List: $purchases")
                 purchases.forEach { purchase ->
                     Log.d(TAG, "getSubscriptionOldPurchases: Object: $purchase")
                     Log.d(TAG, "getSubscriptionOldPurchases: Products: ${purchase.products}")
@@ -221,7 +229,9 @@ abstract class BillingHelper(private val context: Context) {
                         for (i in 0 until dataProviderSub.productIdsList.size) {
                             if (dataProviderSub.productIdsList[i].contains(compareSKU)) {
                                 setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_SUB_OWNED)
-                                onConnectionListener?.onOldPurchaseResult(true)
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    onConnectionListener?.onOldPurchaseResult(true)
+                                }
                                 return@forEach
                             }
                         }
@@ -235,7 +245,9 @@ abstract class BillingHelper(private val context: Context) {
                                 billingClient.acknowledgePurchase(acknowledgePurchaseParams) { billingResult: BillingResult ->
                                     if (billingResult.responseCode == BillingClient.BillingResponseCode.OK || purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
                                         setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_SUB_OWNED_AND_ACKNOWLEDGE)
-                                        onConnectionListener?.onOldPurchaseResult(true)
+                                        CoroutineScope(Dispatchers.Main).launch {
+                                            onConnectionListener?.onOldPurchaseResult(true)
+                                        }
                                     } else {
                                         setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_SUB_OWNED_AND_FAILED_TO_ACKNOWLEDGE)
                                     }

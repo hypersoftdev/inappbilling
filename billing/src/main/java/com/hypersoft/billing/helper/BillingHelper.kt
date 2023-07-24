@@ -149,15 +149,16 @@ abstract class BillingHelper(private val context: Context) {
                 if (purchase.isAcknowledged) {
                     dataProviderInApp.getProductIdsList().forEach {
                         if (it.contains(compareSKU, true)) {
+                            isPurchasedFound = true
                             setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_OWNED)
                             Handler(Looper.getMainLooper()).post {
-                                isPurchasedFound = true
                                 CoroutineScope(Dispatchers.Main).launch {
                                     onConnectionListener?.onOldPurchaseResult(true)
                                 }
                             }
                         }
                     }
+                    checkForSubscriptionIfAvailable()
                 } else {
                     if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
                         for (i in 0 until dataProviderInApp.getProductIdsList().size) {
@@ -177,15 +178,17 @@ abstract class BillingHelper(private val context: Context) {
                                 } else {
                                     setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_OWNED_AND_FAILED_TO_ACKNOWLEDGE)
                                 }
+                                checkForSubscriptionIfAvailable()
                             }
                         }
+                    } else {
+                        checkForSubscriptionIfAvailable()
                     }
                 }
             }
             if (purchases.isEmpty()) {
                 setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_NOT_FOUND)
             }
-            checkForSubscriptionIfAvailable()
             queryForAvailableInAppProducts()
             queryForAvailableSubProducts()
         }

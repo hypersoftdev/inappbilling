@@ -4,7 +4,7 @@ import android.app.Activity
 import android.content.Context
 import com.hypersoft.billing.helper.BillingHelper
 import com.hypersoft.billing.interfaces.OnPurchaseListener
-import dev.epegasus.billinginapppurchases.interfaces.OnConnectionListener
+import com.hypersoft.billing.interfaces.OnConnectionListener
 
 /**
  * @param context: Context can be of Application class

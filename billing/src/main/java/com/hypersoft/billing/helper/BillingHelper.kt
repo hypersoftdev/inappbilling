@@ -31,7 +31,7 @@ import com.hypersoft.billing.enums.ProductType
 import com.hypersoft.billing.interfaces.OnPurchaseListener
 import com.hypersoft.billing.status.State.getBillingState
 import com.hypersoft.billing.status.State.setBillingState
-import dev.epegasus.billinginapppurchases.interfaces.OnConnectionListener
+import com.hypersoft.billing.interfaces.OnConnectionListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

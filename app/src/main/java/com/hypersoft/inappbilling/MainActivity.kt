@@ -13,7 +13,7 @@ import com.hypersoft.billing.dataClasses.ProductDetail
 import com.hypersoft.billing.helper.BillingHelper.Companion.TAG
 import com.hypersoft.billing.interfaces.OnPurchaseListener
 import com.hypersoft.billing.status.State
-import dev.epegasus.billinginapppurchases.interfaces.OnConnectionListener
+import com.hypersoft.billing.interfaces.OnConnectionListener
 
 class MainActivity : AppCompatActivity() {
 

@@ -188,6 +188,7 @@ abstract class BillingHelper(private val context: Context) {
             }
             if (purchases.isEmpty()) {
                 setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_NOT_FOUND)
+                checkForSubscriptionIfAvailable()
             }
             queryForAvailableInAppProducts()
             queryForAvailableSubProducts()

@@ -1,4 +1,4 @@
-package dev.epegasus.billinginapppurchases.interfaces
+package com.hypersoft.billing.interfaces
 
 /**
  * @Author: SOHAIB AHMED

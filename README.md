@@ -100,6 +100,11 @@ billingManager.makeSubPurchase(activity, SubscriptionPlans.basicPlanMonthly, obj
 Add plans and tags on Play Console
 There are few subsciption tags as follow, to generate plans.
 
+For Weekly Subscription
+
+    -> Product ID:          basic_product_weekly
+    -> Plan ID:             basic-plan-weekly
+
 For Montly Subscription
 
     -> Product ID:          basic_product_monthly

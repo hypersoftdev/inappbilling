@@ -24,38 +24,44 @@ import com.android.billingclient.api.queryProductDetails
 import com.hypersoft.billing.constants.SubscriptionPlans
 import com.hypersoft.billing.constants.SubscriptionProductIds
 import com.hypersoft.billing.dataClasses.ProductDetail
+import com.hypersoft.billing.dataClasses.PurchaseDetail
 import com.hypersoft.billing.dataProvider.DataProviderInApp
 import com.hypersoft.billing.dataProvider.DataProviderSub
 import com.hypersoft.billing.enums.BillingState
 import com.hypersoft.billing.enums.ProductType
+import com.hypersoft.billing.interfaces.OnConnectionListener
 import com.hypersoft.billing.interfaces.OnPurchaseListener
 import com.hypersoft.billing.status.State.getBillingState
 import com.hypersoft.billing.status.State.setBillingState
-import com.hypersoft.billing.interfaces.OnConnectionListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Suppress("unused")
 abstract class BillingHelper(private val context: Context) {
 
     private val dataProviderInApp by lazy { DataProviderInApp() }
     private val dataProviderSub by lazy { DataProviderSub() }
+    private val simpleDateFormat by lazy { SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()) }
 
     private var onConnectionListener: OnConnectionListener? = null
     private var onPurchaseListener: OnPurchaseListener? = null
-
-    private var isPurchasedFound = false
+    private var purchaseDetail: PurchaseDetail? = null
 
     @JvmField
     protected var checkForSubscription = false
+    private var isPurchasedFound = false
 
     private val _productDetailList = ArrayList<ProductDetail>()
     private val productDetailList: List<ProductDetail> get() = _productDetailList.toList()
 
     private val _productDetailsLiveData = MutableLiveData<List<ProductDetail>>()
     val productDetailsLiveData: LiveData<List<ProductDetail>> = _productDetailsLiveData
+
 
     /* ------------------------------------------------ Initializations ------------------------------------------------ */
 
@@ -117,19 +123,21 @@ abstract class BillingHelper(private val context: Context) {
     private fun proceedBilling() {
         setBillingState(BillingState.CONNECTION_ESTABLISHED)
         getInAppOldPurchases()
+        queryForAvailableInAppProducts()
+        queryForAvailableSubProducts()
         Handler(Looper.getMainLooper()).post {
             onConnectionListener?.onConnectionResult(true, BillingState.CONNECTION_ESTABLISHED.message)
         }
+    }
+
+    private fun getPurchaseTime(purchaseTime: Long): String {
+        return simpleDateFormat.format(Date(purchaseTime))
     }
 
     private fun getInAppOldPurchases() = CoroutineScope(Dispatchers.Main).launch {
         setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_FETCHING)
         val queryPurchasesParams = QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build()
         billingClient.queryPurchasesAsync(queryPurchasesParams) { _, purchases ->
-            CoroutineScope(Dispatchers.Main).launch {
-                onConnectionListener?.onOldPurchaseResult(false)
-            }
-
             Log.d(TAG, " --------------------------- old purchase (In-App)  --------------------------- ")
             Log.d(TAG, "getInAppOldPurchases: Object: $purchases")
             purchases.forEach { purchase ->
@@ -140,6 +148,7 @@ abstract class BillingHelper(private val context: Context) {
 
                 if (purchase.products.isEmpty()) {
                     setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_NOT_FOUND)
+                    checkForSubscriptionIfAvailable()
                     return@forEach
                 }
 
@@ -150,12 +159,8 @@ abstract class BillingHelper(private val context: Context) {
                     dataProviderInApp.getProductIdsList().forEach {
                         if (it.contains(compareSKU, true)) {
                             isPurchasedFound = true
+                            purchaseDetail = dataProviderInApp.getPurchaseDetail(simpleDateFormat, purchase)
                             setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_OWNED)
-                            Handler(Looper.getMainLooper()).post {
-                                CoroutineScope(Dispatchers.Main).launch {
-                                    onConnectionListener?.onOldPurchaseResult(true)
-                                }
-                            }
                         }
                     }
                     checkForSubscriptionIfAvailable()
@@ -171,10 +176,8 @@ abstract class BillingHelper(private val context: Context) {
                             billingClient.acknowledgePurchase(acknowledgePurchaseParams) { billingResult: BillingResult ->
                                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK || purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
                                     setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_OWNED_AND_ACKNOWLEDGE)
+                                    purchaseDetail = dataProviderInApp.getPurchaseDetail(simpleDateFormat, purchase)
                                     isPurchasedFound = true
-                                    CoroutineScope(Dispatchers.Main).launch {
-                                        onConnectionListener?.onOldPurchaseResult(true)
-                                    }
                                 } else {
                                     setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_OWNED_AND_FAILED_TO_ACKNOWLEDGE)
                                 }
@@ -190,14 +193,15 @@ abstract class BillingHelper(private val context: Context) {
                 setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_INAPP_NOT_FOUND)
                 checkForSubscriptionIfAvailable()
             }
-            queryForAvailableInAppProducts()
-            queryForAvailableSubProducts()
         }
     }
 
     private fun checkForSubscriptionIfAvailable() {
-        if (isPurchasedFound || !checkForSubscription) {
-            return
+        if (!checkForSubscription || isPurchasedFound) {
+            CoroutineScope(Dispatchers.Main).launch {
+                onConnectionListener?.onOldPurchaseResult(isPurchasedFound, purchaseDetail)
+            }
+            if (isPurchasedFound) return
         }
         getSubscriptionOldPurchases()
     }
@@ -208,10 +212,6 @@ abstract class BillingHelper(private val context: Context) {
 
         billingClient.queryPurchasesAsync(queryPurchasesParams) { billingResult, purchases ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                CoroutineScope(Dispatchers.Main).launch {
-                    onConnectionListener?.onOldPurchaseResult(false)
-                }
-
                 Log.d(TAG, " --------------------------- old purchase (Sub)   --------------------------- ")
                 Log.d(TAG, "getSubscriptionOldPurchases: List: $purchases")
                 purchases.forEach { purchase ->
@@ -219,7 +219,6 @@ abstract class BillingHelper(private val context: Context) {
                     Log.d(TAG, "getSubscriptionOldPurchases: Products: ${purchase.products}")
                     Log.d(TAG, "getSubscriptionOldPurchases: Original JSON: ${purchase.originalJson}")
                     Log.d(TAG, "getSubscriptionOldPurchases: Developer Payload: ${purchase.developerPayload}")
-
 
                     if (purchase.products.isEmpty()) {
                         setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_SUB_NOT_FOUND)
@@ -233,9 +232,9 @@ abstract class BillingHelper(private val context: Context) {
                         for (i in 0 until dataProviderSub.productIdsList.size) {
                             if (dataProviderSub.productIdsList[i].contains(compareSKU)) {
                                 setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_SUB_OWNED)
-                                CoroutineScope(Dispatchers.Main).launch {
-                                    onConnectionListener?.onOldPurchaseResult(true)
-                                }
+                                isPurchasedFound = true
+                                purchaseDetail = dataProviderSub.getPurchaseDetail(simpleDateFormat, purchase)
+                                calculateResult()
                                 return@forEach
                             }
                         }
@@ -249,18 +248,28 @@ abstract class BillingHelper(private val context: Context) {
                                 billingClient.acknowledgePurchase(acknowledgePurchaseParams) { billingResult: BillingResult ->
                                     if (billingResult.responseCode == BillingClient.BillingResponseCode.OK || purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
                                         setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_SUB_OWNED_AND_ACKNOWLEDGE)
-                                        CoroutineScope(Dispatchers.Main).launch {
-                                            onConnectionListener?.onOldPurchaseResult(true)
-                                        }
+                                        isPurchasedFound = true
+                                        purchaseDetail = dataProviderSub.getPurchaseDetail(simpleDateFormat, purchase)
                                     } else {
                                         setBillingState(BillingState.CONSOLE_OLD_PRODUCTS_SUB_OWNED_AND_FAILED_TO_ACKNOWLEDGE)
                                     }
+                                    calculateResult()
                                 }
                             }
+                        } else {
+                            calculateResult()
                         }
                     }
                 }
+                if (purchases.isEmpty())
+                    calculateResult()
             }
+        }
+    }
+
+    private fun calculateResult() {
+        CoroutineScope(Dispatchers.Main).launch {
+            onConnectionListener?.onOldPurchaseResult(isPurchasedFound, purchaseDetail)
         }
     }
 

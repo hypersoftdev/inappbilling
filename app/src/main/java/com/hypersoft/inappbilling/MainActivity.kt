@@ -10,6 +10,7 @@ import com.hypersoft.billing.BillingManager
 import com.hypersoft.billing.constants.SubscriptionPlans
 import com.hypersoft.billing.constants.SubscriptionProductIds
 import com.hypersoft.billing.dataClasses.ProductDetail
+import com.hypersoft.billing.dataClasses.PurchaseDetail
 import com.hypersoft.billing.helper.BillingHelper.Companion.TAG
 import com.hypersoft.billing.interfaces.OnPurchaseListener
 import com.hypersoft.billing.status.State
@@ -88,7 +89,7 @@ class MainActivity : AppCompatActivity() {
                     Log.d("TAG", "onConnectionResult: $isSuccess - $message")
                 }
 
-                override fun onOldPurchaseResult(isPurchased: Boolean) {
+                override fun onOldPurchaseResult(isPurchased: Boolean, purchaseDetail: PurchaseDetail?) {
                     // Update your shared-preferences here!
                     Log.d("TAG", "onOldPurchaseResult: $isPurchased")
                 }
@@ -100,7 +101,7 @@ class MainActivity : AppCompatActivity() {
                     Log.d("TAG", "onConnectionResult: $isSuccess - $message")
                 }
 
-                override fun onOldPurchaseResult(isPurchased: Boolean) {
+                override fun onOldPurchaseResult(isPurchased: Boolean, purchaseDetail: PurchaseDetail?) {
                     // Update your shared-preferences here!
                     Log.d("TAG", "onOldPurchaseResult: $isPurchased")
                 }

@@ -61,14 +61,22 @@ diComponent.billingManager.startConnection(productId, object : OnConnectionListe
         binding.mbMakePurchase.isEnabled = isSuccess
     }
 
-    override fun onOldPurchaseResult(isPurchased: Boolean) {
+    override fun onOldPurchaseResult(isPurchased: Boolean, purchaseDetail: PurchaseDetail?) {
         // Update your shared-preferences here!
         Log.d("TAG", "onOldPurchaseResult: $isPurchased")
     }
 })
-
+```
+Access the full details of the item you have currently purchased by utilizing the purchaseDetail method.
 
 ```
+data class PurchaseDetail (
+    val productType: ProductType,    // e.g. SUBS/INAPP
+    val purchaseType: String,        // e.g. Weekly, Monthly, Yearly, etc
+    val purchaseTime: String         // e.g. 2023-01-01 12:00
+)
+```
+
 #### Billing State Observer
 
 Observe the states by using `BillingManager` TAG

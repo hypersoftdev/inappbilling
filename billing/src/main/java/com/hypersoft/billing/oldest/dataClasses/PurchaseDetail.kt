@@ -1,6 +1,6 @@
-package com.hypersoft.billing.dataClasses
+package com.hypersoft.billing.oldest.dataClasses
 
-import com.hypersoft.billing.enums.ProductType
+import com.hypersoft.billing.oldest.enums.ProductType
 
 /**
  * @Author: SOHAIB AHMED

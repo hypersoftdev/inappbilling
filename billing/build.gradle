@@ -5,11 +5,11 @@ plugins {
 
 android {
     namespace 'com.hypersoft.billing'
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         minSdk 23
-        targetSdk 33
+        targetSdk 34
     }
 
     buildTypes {
@@ -29,12 +29,12 @@ android {
 
 dependencies {
 
-    implementation 'androidx.core:core-ktx:1.10.1'
+    implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
 
     // Google Play Billing
-    implementation "com.android.billingclient:billing-ktx:6.0.1"
+    implementation "com.android.billingclient:billing-ktx:6.1.0"
 
     // LiveData
-    implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.6.1"
+    implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.7.0"
 }

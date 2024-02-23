@@ -1,9 +1,9 @@
-package com.hypersoft.billing.status
+package com.hypersoft.billing.oldest.status
 
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.hypersoft.billing.enums.BillingState
+import com.hypersoft.billing.oldest.enums.BillingState
 
 object State {
 

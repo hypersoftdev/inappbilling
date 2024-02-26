@@ -1,4 +1,4 @@
-package com.hypersoft.billing.oldest.enums
+package com.hypersoft.billing.common.dataClasses
 
 /**
  * @Author: SOHAIB AHMED

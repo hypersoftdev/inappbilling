@@ -2,6 +2,7 @@ package com.hypersoft.billing.latest.repository
 
 import android.app.Activity
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.android.billingclient.api.BillingClient
@@ -12,15 +13,18 @@ import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryPurchasesParams
+import com.hypersoft.billing.common.dataClasses.ProductType
 import com.hypersoft.billing.latest.dataClasses.CompletePurchase
 import com.hypersoft.billing.latest.dataClasses.ProductDetail
 import com.hypersoft.billing.latest.dataClasses.PurchaseDetail
 import com.hypersoft.billing.latest.dataClasses.QueryProductDetail
-import com.hypersoft.billing.latest.enums.ProductType
 import com.hypersoft.billing.latest.enums.ResultState
 import com.hypersoft.billing.latest.extensions.toFormattedDate
 import com.hypersoft.billing.latest.utils.Result
-import com.hypersoft.billing.oldest.interfaces.OnPurchaseListener
+import com.hypersoft.billing.oldest.helper.BillingHelper.Companion.TAG
+import com.hypersoft.billing.common.interfaces.OnPurchaseListener
+import com.hypersoft.billing.latest.utils.QueryUtils
+import com.hypersoft.billing.latest.utils.ValidationUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -38,7 +42,7 @@ import kotlinx.coroutines.withContext
  *      -> https://stackoverflow.com/users/20440272/sohaib-ahmed
  */
 
-internal class BillingRepository(context: Context) {
+internal open class BillingRepository(context: Context) {
 
     private val billingClient by lazy {
         BillingClient.newBuilder(context)
@@ -110,7 +114,7 @@ internal class BillingRepository(context: Context) {
      *  @see [BillingClient.isReady]
      *
      */
-    fun startConnection(callback: (isSuccess: Boolean, message: String) -> Unit) {
+    protected fun startConnection(callback: (isSuccess: Boolean, message: String) -> Unit) {
 
         // Check if connection is already being establishing
         if (Result.getResultState() == ResultState.CONNECTION_ESTABLISHING) {
@@ -159,7 +163,7 @@ internal class BillingRepository(context: Context) {
     /* ---------------------------------------- Purchase History ---------------------------------------- */
     /* -------------------------------------------------------------------------------------------------- */
 
-    fun setUserQueries(userInAppPurchases: List<String>, userSubsPurchases: List<String>) {
+    protected fun setUserQueries(userInAppPurchases: List<String>, userSubsPurchases: List<String>) {
         _userQueryList.clear()
 
         // Save user queries
@@ -176,7 +180,7 @@ internal class BillingRepository(context: Context) {
      * This method uses a cache of Google Play Store app without initiating a network request.
      */
 
-    fun fetchPurchases() {
+    protected fun fetchPurchases() {
         // Clear lists
         _purchases.clear()
 
@@ -275,7 +279,7 @@ internal class BillingRepository(context: Context) {
     /* ------------------------------------------ Query Products ------------------------------------------ */
     /* ---------------------------------------------------------------------------------------------------- */
 
-    fun fetchStoreProducts() {
+    protected fun fetchStoreProducts() {
         CoroutineScope(Dispatchers.IO + job).launch {
             Result.setResultState(ResultState.CONSOLE_QUERY_PRODUCTS_FETCHING)
 
@@ -340,7 +344,7 @@ internal class BillingRepository(context: Context) {
     /* ---------------------------------------- Product Purchases ----------------------------------------- */
     /* ---------------------------------------------------------------------------------------------------- */
 
-    fun purchaseInApp(activity: Activity?, productId: String, onPurchaseListener: OnPurchaseListener) {
+    protected fun purchaseInApp(activity: Activity?, productId: String, onPurchaseListener: OnPurchaseListener) {
         this.onPurchaseListener = onPurchaseListener
 
         val errorMessage = validationUtils.checkForInApp(activity, productId)
@@ -362,7 +366,7 @@ internal class BillingRepository(context: Context) {
         }
     }
 
-    fun purchaseSubs(activity: Activity?, productId: String, planId: String, onPurchaseListener: OnPurchaseListener) {
+    protected fun purchaseSubs(activity: Activity?, productId: String, planId: String, onPurchaseListener: OnPurchaseListener) {
         this.onPurchaseListener = onPurchaseListener
 
         val errorMessage = validationUtils.checkForSubs(activity, productId)
@@ -386,9 +390,11 @@ internal class BillingRepository(context: Context) {
     }
 
     private fun launchFlow(activity: Activity, productDetails: ProductDetails) {
+        Log.i(TAG, "launchFlow: Product Details about to be purchase: $productDetails")
         val paramsList = listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(productDetails).build())
         val flowParams = BillingFlowParams.newBuilder().setProductDetailsParamsList(paramsList).build()
         billingClient.launchBillingFlow(activity, flowParams)
+        Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)
     }
 
     private val purchasesListener = PurchasesUpdatedListener { billingResult, purchasesList ->
@@ -407,9 +413,10 @@ internal class BillingRepository(context: Context) {
             }
 
             response.isUserCancelled -> Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_USER_CANCELLED)
+
+            response.isTerribleFailure -> Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_EXCEPTION_FOUND)
             response.isRecoverableError -> Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_EXCEPTION_FOUND)
             response.isNonrecoverableError -> Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_EXCEPTION_FOUND)
-            response.isTerribleFailure -> Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_EXCEPTION_FOUND)
         }
         onPurchaseListener?.onPurchaseResult(false, Result.getResultState().message)
     }
@@ -441,7 +448,7 @@ internal class BillingRepository(context: Context) {
      * End billing and release memory
      */
 
-    fun endConnection() {
+    protected fun endConnection() {
         job.cancel()
         if (billingClient.isReady) {
             billingClient.endConnection()

@@ -1,20 +1,6 @@
 package com.hypersoft.inappbilling
 
-import android.os.Bundle
-import android.util.Log
-import android.widget.Button
-import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.hypersoft.billing.BillingManager
-import com.hypersoft.billing.oldest.constants.SubscriptionPlans
-import com.hypersoft.billing.oldest.constants.SubscriptionProductIds
-import com.hypersoft.billing.oldest.dataClasses.ProductDetail
-import com.hypersoft.billing.oldest.dataClasses.PurchaseDetail
-import com.hypersoft.billing.oldest.helper.BillingHelper.Companion.TAG
-import com.hypersoft.billing.oldest.interfaces.OnPurchaseListener
-import com.hypersoft.billing.oldest.status.State
-import com.hypersoft.billing.oldest.interfaces.OnConnectionListener
 
 class MainActivity2 : AppCompatActivity() {
 

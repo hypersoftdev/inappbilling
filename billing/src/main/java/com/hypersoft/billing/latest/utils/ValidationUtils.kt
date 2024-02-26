@@ -1,9 +1,8 @@
-package com.hypersoft.billing.latest.repository
+package com.hypersoft.billing.latest.utils
 
 import android.app.Activity
 import com.android.billingclient.api.BillingClient
 import com.hypersoft.billing.latest.enums.ResultState
-import com.hypersoft.billing.latest.utils.Result
 
 /**
  * @Author: SOHAIB AHMED

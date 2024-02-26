@@ -28,9 +28,9 @@ import com.hypersoft.billing.oldest.dataClasses.PurchaseDetail
 import com.hypersoft.billing.oldest.dataProvider.DataProviderInApp
 import com.hypersoft.billing.oldest.dataProvider.DataProviderSub
 import com.hypersoft.billing.oldest.enums.BillingState
-import com.hypersoft.billing.oldest.enums.ProductType
+import com.hypersoft.billing.common.dataClasses.ProductType
 import com.hypersoft.billing.oldest.interfaces.OnConnectionListener
-import com.hypersoft.billing.oldest.interfaces.OnPurchaseListener
+import com.hypersoft.billing.common.interfaces.OnPurchaseListener
 import com.hypersoft.billing.oldest.status.State.getBillingState
 import com.hypersoft.billing.oldest.status.State.setBillingState
 import kotlinx.coroutines.CoroutineScope

@@ -1,4 +1,4 @@
-package com.hypersoft.billing.oldest.interfaces
+package com.hypersoft.billing.common.interfaces
 
 /**
  * @Author: SOHAIB AHMED
@@ -11,5 +11,4 @@ package com.hypersoft.billing.oldest.interfaces
 interface OnPurchaseListener {
 
     fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String)
-
 }

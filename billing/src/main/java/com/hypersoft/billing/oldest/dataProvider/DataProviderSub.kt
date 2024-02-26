@@ -6,7 +6,7 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.hypersoft.billing.oldest.constants.SubscriptionProductIds
 import com.hypersoft.billing.oldest.dataClasses.PurchaseDetail
-import com.hypersoft.billing.oldest.enums.ProductType
+import com.hypersoft.billing.common.dataClasses.ProductType
 import java.text.SimpleDateFormat
 import java.util.Date
 

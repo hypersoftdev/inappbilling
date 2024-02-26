@@ -4,7 +4,7 @@ import android.app.Activity
 import android.content.Context
 import com.hypersoft.billing.latest.interfaces.BillingListener
 import com.hypersoft.billing.latest.repository.BillingRepository
-import com.hypersoft.billing.oldest.interfaces.OnPurchaseListener
+import com.hypersoft.billing.common.interfaces.OnPurchaseListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -18,21 +18,20 @@ import kotlinx.coroutines.launch
  *      -> https://stackoverflow.com/users/20440272/sohaib-ahmed
  */
 
-open class BillingController(private val context: Context) {
+internal class BillingController(context: Context) : BillingRepository(context) {
 
-    private val billingRepository by lazy { BillingRepository(context) }
     private var billingListener: BillingListener? = null
 
     private var job: Job? = null
 
-    protected fun startBillingConnection(
+    fun startBillingConnection(
         userInAppPurchases: List<String>,
         userSubsPurchases: List<String>,
         billingListener: BillingListener? = null
     ) {
         this.billingListener = billingListener
 
-        billingRepository.startConnection { isSuccess, message ->
+        startConnection { isSuccess, message ->
             billingListener?.onConnectionResult(isSuccess, message)
             if (isSuccess) {
                 fetchPurchases(userInAppPurchases, userSubsPurchases)
@@ -41,37 +40,37 @@ open class BillingController(private val context: Context) {
     }
 
     private fun fetchPurchases(userInAppPurchases: List<String>, userSubsPurchases: List<String>) {
-        billingRepository.setUserQueries(userInAppPurchases, userSubsPurchases)
-        billingRepository.fetchPurchases()
-        billingRepository.fetchStoreProducts()
+        setUserQueries(userInAppPurchases, userSubsPurchases)
+        fetchPurchases()
+        fetchStoreProducts()
 
         // Observe purchases
         job = CoroutineScope(Dispatchers.Main).launch {
-            billingRepository.purchasesSharedFlow.collect {
+            purchasesSharedFlow.collect {
                 billingListener?.purchasesResult(it)
             }
         }
     }
 
-    protected fun makePurchaseInApp(
+    fun makePurchaseInApp(
         activity: Activity?,
         productId: String,
         onPurchaseListener: OnPurchaseListener
     ) {
-        billingRepository.purchaseInApp(activity = activity, productId = productId, onPurchaseListener = onPurchaseListener)
+        purchaseInApp(activity = activity, productId = productId, onPurchaseListener = onPurchaseListener)
     }
 
-    protected fun makePurchaseSub(
+    fun makePurchaseSub(
         activity: Activity?,
         productId: String,
         planId: String,
         onPurchaseListener: OnPurchaseListener
     ) {
-        billingRepository.purchaseSubs(activity = activity, productId = productId, planId = planId, onPurchaseListener = onPurchaseListener)
+        purchaseSubs(activity = activity, productId = productId, planId = planId, onPurchaseListener = onPurchaseListener)
     }
 
-    protected fun cleanBilling() {
-        billingRepository.endConnection()
+    fun cleanBilling() {
+        endConnection()
         job?.cancel()
     }
 }

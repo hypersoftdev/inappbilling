@@ -27,38 +27,17 @@ enum class ResultState(val message: String) {
     FEATURE_NOT_SUPPORTED("Feature is not Supported! Cannot buy Subscription"),
     ACTIVITY_REFERENCE_NOT_FOUND("Activity reference is null"),
 
-
-
-
-
     CONSOLE_PURCHASE_PRODUCTS_INAPP_FETCHING("InApp -> Fetching purchased products from google play console."),
     CONSOLE_PURCHASE_PRODUCTS_INAPP_FETCHING_FAILED("InApp -> Failed to fetch purchased products from google play console."),
     CONSOLE_PURCHASE_PRODUCTS_INAPP_FETCHING_SUCCESS("InApp -> Successfully fetched purchased products from google play console."),
     CONSOLE_PURCHASE_PRODUCTS_INAPP_FOUND("InApp -> User owns products"),
     CONSOLE_PURCHASE_PRODUCTS_INAPP_NOT_FOUND("InApp -> User does not owned any product yet."),
 
-
-    CONSOLE_PURCHASE_PRODUCTS_INAPP_NOT_OWNED("InApp -> Doesn't owned requested products"),
-    CONSOLE_PURCHASE_PRODUCTS_INAPP_OWNED_BUT_NOT_ACKNOWLEDGE("InApp -> Product is owned but is not acknowledged yet"),
-    CONSOLE_PURCHASE_PRODUCTS_INAPP_OWNED_AND_ACKNOWLEDGE("InApp -> Product is owned and is acknowledged as well"),
-    CONSOLE_PURCHASE_PRODUCTS_INAPP_OWNED_AND_FAILED_TO_ACKNOWLEDGE("InApp -> Product is owned and is failed to acknowledged"),
-
-
-
-
-
     CONSOLE_PURCHASE_PRODUCTS_SUB_FETCHING("SUB -> Fetching purchased products from google play console."),
     CONSOLE_PURCHASE_PRODUCTS_SUB_FETCHING_FAILED("SUB ->Failed to fetch purchased products from google play console."),
     CONSOLE_PURCHASE_PRODUCTS_SUB_FETCHING_SUCCESS("SUB -> Successfully fetched purchased products from google play console."),
     CONSOLE_PURCHASE_PRODUCTS_SUB_FOUND("SUB -> User owns products"),
     CONSOLE_PURCHASE_PRODUCTS_SUB_NOT_FOUND("SUB -> User does not owned any product yet"),
-
-
-    CONSOLE_PURCHASE_PRODUCTS_SUB_NOT_OWNED("SUB -> Doesn't owned requested products"),
-    CONSOLE_PURCHASE_PRODUCTS_SUB_OWNED_BUT_NOT_ACKNOWLEDGE("SUB -> Product is owned but is not acknowledged yet"),
-    CONSOLE_PURCHASE_PRODUCTS_SUB_OWNED_AND_ACKNOWLEDGE("SUB-> Product is owned and is acknowledged as well"),
-    CONSOLE_PURCHASE_PRODUCTS_SUB_OWNED_AND_FAILED_TO_ACKNOWLEDGE("SUB -> Product is owned and is failed to acknowledged"),
-
 
     CONSOLE_PURCHASE_PRODUCTS_RESPONSE_PROCESSING("InApp, Subs -> Processing purchases and their product details"),
     CONSOLE_PURCHASE_PRODUCTS_RESPONSE_COMPLETE("InApp, Subs -> Returning result with each purchase product's detail"),

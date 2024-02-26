@@ -1,6 +1,6 @@
 package com.hypersoft.billing.latest.interfaces
 
-import com.hypersoft.billing.oldest.dataClasses.PurchaseDetail
+import com.hypersoft.billing.latest.dataClasses.PurchaseDetail
 
 /**
  * @Author: SOHAIB AHMED
@@ -12,5 +12,5 @@ import com.hypersoft.billing.oldest.dataClasses.PurchaseDetail
 
 interface BillingListener {
     fun onConnectionResult(isSuccess: Boolean, message: String)
-    fun purchasesResult(isSuccess: Boolean, message: String, purchaseDetail: PurchaseDetail?)
+    fun purchasesResult(isSuccess: List<PurchaseDetail>)
 }

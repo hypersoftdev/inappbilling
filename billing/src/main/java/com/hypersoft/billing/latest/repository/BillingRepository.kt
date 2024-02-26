@@ -18,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * @Author: SOHAIB AHMED
@@ -225,7 +226,10 @@ internal class BillingRepository(context: Context) {
             Result.setResultState(ResultState.CONSOLE_PURCHASE_PRODUCTS_CHECKED_FOR_ACKNOWLEDGEMENT)
 
             billingUtility.checkForAcknowledgements(purchases)
-            _purchasesSharedFlow.emit(resultList)
+
+            withContext(Dispatchers.Main) {
+                _purchasesSharedFlow.emit(resultList)
+            }
         }
     }
 

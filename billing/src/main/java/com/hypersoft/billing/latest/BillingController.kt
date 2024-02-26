@@ -34,6 +34,7 @@ open class BillingController(private val context: Context) {
             billingListener?.onConnectionResult(isSuccess, message)
             if (isSuccess) {
                 fetchPurchases(userInAppPurchases, userSubsPurchases)
+
             }
         }
     }
@@ -42,14 +43,12 @@ open class BillingController(private val context: Context) {
         billingRepository.fetchPurchases(userInAppPurchases, userSubsPurchases)
 
         // Observe purchases
-        job = CoroutineScope(Dispatchers.Default).launch {
-            billingRepository.purchasesSharedFlow
-                .collect {
-                    //billingListener?.purchasesResult(true, "", PurchaseDetail())
-                }
+        job = CoroutineScope(Dispatchers.Main).launch {
+            billingRepository.purchasesSharedFlow.collect {
+                billingListener?.purchasesResult(it)
+            }
         }
     }
-
 
     protected fun cleanBilling() {
         billingRepository.endConnection()

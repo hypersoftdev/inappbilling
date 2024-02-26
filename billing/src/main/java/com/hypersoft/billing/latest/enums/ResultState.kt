@@ -43,27 +43,35 @@ enum class ResultState(val message: String) {
     CONSOLE_PURCHASE_PRODUCTS_RESPONSE_COMPLETE("InApp, Subs -> Returning result with each purchase product's detail"),
     CONSOLE_PURCHASE_PRODUCTS_CHECKED_FOR_ACKNOWLEDGEMENT("InApp, Subs -> Acknowledging purchases if not acknowledge yet"),
 
+    CONSOLE_QUERY_PRODUCTS_FETCHING("InApp, Subs -> Querying product details from console"),
+    CONSOLE_QUERY_PRODUCTS_COMPLETED("InApp, Subs -> Fetched product details from console"),
+
+    CONSOLE_BUY_PRODUCT_EMPTY_ID("InApp, Subs -> Product Id can't be empty"),
+
+    CONSOLE_PRODUCTS_IN_APP_NOT_EXIST("InApp -> No product has been found"),
+
+    CONSOLE_PRODUCTS_SUB_NOT_EXIST("SUB -> No product has been found"),
+
 
     CONSOLE_PRODUCTS_IN_APP_FETCHING("InApp -> Fetching all products from google play console. Try again in few moments"),
     CONSOLE_PRODUCTS_IN_APP_FETCHED_SUCCESSFULLY("InApp -> Successfully fetched queried products details"),
     CONSOLE_PRODUCTS_IN_APP_FETCHING_FAILED("InApp -> Failed to fetch products, response is not okay!"),
     CONSOLE_PRODUCTS_IN_APP_AVAILABLE("InApp -> Products list is not empty"),
-    CONSOLE_PRODUCTS_IN_APP_NOT_EXIST("InApp -> No product has been found"),
-    CONSOLE_PRODUCTS_IN_APP_NOT_FOUND("InApp -> All products are not found"),
 
+    CONSOLE_PRODUCTS_IN_APP_NOT_FOUND("InApp -> All products are not found"),
     CONSOLE_PRODUCTS_SUB_FETCHING("SUB -> Fetching all products from google play console. Try again in few moments"),
     CONSOLE_PRODUCTS_SUB_FETCHED_SUCCESSFULLY("SUB -> Successfully fetched queried products details"),
     CONSOLE_PRODUCTS_SUB_FETCHING_FAILED("SUB -> Failed to fetch products, response is not okay!"),
     CONSOLE_PRODUCTS_SUB_AVAILABLE("SUB -> Products list is not empty"),
-    CONSOLE_PRODUCTS_SUB_NOT_EXIST("SUB -> No product has been found"),
     CONSOLE_PRODUCTS_SUB_NOT_FOUND("SUB -> All products are not found"),
 
     LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY("Google Play Billing has been launched successfully"),
     LAUNCHING_FLOW_INVOCATION_USER_CANCELLED("Cancelled by user"),
     LAUNCHING_FLOW_INVOCATION_EXCEPTION_FOUND("Exception Found, launching Google billing sheet"),
-    PURCHASED_SUCCESSFULLY("Successfully Purchased"),
+    PURCHASING_NO_PURCHASES_FOUND("No purchases found"),
     PURCHASING_ALREADY_OWNED("Already owned this product! No need to purchase"),
     PURCHASING_USER_CANCELLED("Purchasing product has been cancelled by user"),
+    PURCHASING_SUCCESSFULLY("Successfully Purchased"),
     PURCHASING_FAILURE("Failed to make transaction"),
     PURCHASING_ERROR("Error found while purchasing")
 }

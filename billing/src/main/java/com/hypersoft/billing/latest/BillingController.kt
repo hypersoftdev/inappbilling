@@ -1,8 +1,10 @@
 package com.hypersoft.billing.latest
 
+import android.app.Activity
 import android.content.Context
 import com.hypersoft.billing.latest.interfaces.BillingListener
 import com.hypersoft.billing.latest.repository.BillingRepository
+import com.hypersoft.billing.oldest.interfaces.OnPurchaseListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -34,13 +36,14 @@ open class BillingController(private val context: Context) {
             billingListener?.onConnectionResult(isSuccess, message)
             if (isSuccess) {
                 fetchPurchases(userInAppPurchases, userSubsPurchases)
-
             }
         }
     }
 
     private fun fetchPurchases(userInAppPurchases: List<String>, userSubsPurchases: List<String>) {
-        billingRepository.fetchPurchases(userInAppPurchases, userSubsPurchases)
+        billingRepository.setUserQueries(userInAppPurchases, userSubsPurchases)
+        billingRepository.fetchPurchases()
+        billingRepository.fetchStoreProducts()
 
         // Observe purchases
         job = CoroutineScope(Dispatchers.Main).launch {
@@ -48,6 +51,23 @@ open class BillingController(private val context: Context) {
                 billingListener?.purchasesResult(it)
             }
         }
+    }
+
+    protected fun makePurchaseInApp(
+        activity: Activity?,
+        productId: String,
+        onPurchaseListener: OnPurchaseListener
+    ) {
+        billingRepository.purchaseInApp(activity = activity, productId = productId, onPurchaseListener = onPurchaseListener)
+    }
+
+    protected fun makePurchaseSub(
+        activity: Activity?,
+        productId: String,
+        planId: String,
+        onPurchaseListener: OnPurchaseListener
+    ) {
+        billingRepository.purchaseSubs(activity = activity, productId = productId, planId = planId, onPurchaseListener = onPurchaseListener)
     }
 
     protected fun cleanBilling() {

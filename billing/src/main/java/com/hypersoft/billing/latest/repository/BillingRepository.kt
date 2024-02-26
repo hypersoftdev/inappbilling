@@ -1,24 +1,34 @@
 package com.hypersoft.billing.latest.repository
 
+import android.app.Activity
 import android.content.Context
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
+import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryPurchasesParams
 import com.hypersoft.billing.latest.dataClasses.CompletePurchase
+import com.hypersoft.billing.latest.dataClasses.ProductDetail
 import com.hypersoft.billing.latest.dataClasses.PurchaseDetail
+import com.hypersoft.billing.latest.dataClasses.QueryProductDetail
 import com.hypersoft.billing.latest.enums.ProductType
 import com.hypersoft.billing.latest.enums.ResultState
 import com.hypersoft.billing.latest.extensions.toFormattedDate
 import com.hypersoft.billing.latest.utils.Result
+import com.hypersoft.billing.oldest.interfaces.OnPurchaseListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
 
 /**
  * @Author: SOHAIB AHMED
@@ -37,7 +47,8 @@ internal class BillingRepository(context: Context) {
             .build()
     }
 
-    private val billingUtility by lazy { BillingUtility(billingClient) }
+    private val queryUtils: QueryUtils by lazy { QueryUtils(billingClient) }
+    private val validationUtils: ValidationUtils by lazy { ValidationUtils(billingClient) }
 
     /**
      * @property _purchasesSharedFlow: Collect (observe) this, to get user's purchase list currently owns
@@ -46,6 +57,15 @@ internal class BillingRepository(context: Context) {
     val purchasesSharedFlow = _purchasesSharedFlow.asSharedFlow()
 
 
+    private val _productDetailsLiveData = MutableLiveData<List<ProductDetail>>()
+    val productDetailsLiveData: LiveData<List<ProductDetail>> = _productDetailsLiveData
+
+    /**
+     * @property _userQueryList: List of products that the user has requested or queried (key, value) pair.
+     */
+    private val _userQueryList: ArrayList<Pair<String, String>> = arrayListOf()
+    private val userQueryList: List<Pair<String, String>> get() = _userQueryList.toList()
+
     /**
      * @property _purchases: List of all purchases that this user has ever made and currently owns.
      */
@@ -53,10 +73,15 @@ internal class BillingRepository(context: Context) {
     private val purchases: List<Purchase> get() = _purchases.toList()
 
     /**
-     * @property _userQueryList: List of products that the user has requested or queried (key, value) pair.
+     * @property _storeProductDetailsList: List of product details from server
      */
-    private val _userQueryList: ArrayList<Pair<String, String>> = arrayListOf()
-    private val userQueryList: List<Pair<String, String>> get() = _userQueryList.toList()
+    private val _storeProductDetailsList: ArrayList<QueryProductDetail> = arrayListOf()
+    private val storeProductDetailsList: List<QueryProductDetail> get() = _storeProductDetailsList.toList()
+
+    private val job = Job()
+
+    // Listeners
+    private var onPurchaseListener: OnPurchaseListener? = null
 
 
     /**
@@ -73,13 +98,16 @@ internal class BillingRepository(context: Context) {
      *
      */
 
+    /* ---------------------------------------------------------------------------------------------------- */
     /* ---------------------------------------- Billing Connection ---------------------------------------- */
+    /* ---------------------------------------------------------------------------------------------------- */
 
     /**
      * In order to start working with Google play billing,
      * we need to initialize 'billingClient' and start connecting to server.
      *
-     *  @see billingClient.isReady: Used to check, if billing has already been initialized or not
+     *  isReady: Used to check, if billing has already been initialized or not
+     *  @see [BillingClient.isReady]
      *
      */
     fun startConnection(callback: (isSuccess: Boolean, message: String) -> Unit) {
@@ -126,21 +154,31 @@ internal class BillingRepository(context: Context) {
         }
     }
 
-    /**
-     * Only active subscriptions and non-consumed one-time purchases are returned.
-     * This method uses a cache of Google Play Store app without initiating a network request.
-     */
 
+    /* -------------------------------------------------------------------------------------------------- */
     /* ---------------------------------------- Purchase History ---------------------------------------- */
+    /* -------------------------------------------------------------------------------------------------- */
 
-    fun fetchPurchases(userInAppPurchases: List<String>, userSubsPurchases: List<String>) {
-        // Clear lists
-        _purchases.clear()
+    fun setUserQueries(userInAppPurchases: List<String>, userSubsPurchases: List<String>) {
         _userQueryList.clear()
 
         // Save user queries
         userInAppPurchases.forEach { _userQueryList.add(Pair(BillingClient.ProductType.INAPP, it)) }
         userSubsPurchases.forEach { _userQueryList.add(Pair(BillingClient.ProductType.SUBS, it)) }
+    }
+
+    /* -------------------------------------------------------------------------------------------------- */
+    /* ---------------------------------------- Purchase History ---------------------------------------- */
+    /* -------------------------------------------------------------------------------------------------- */
+
+    /**
+     * Only active subscriptions and non-consumed one-time purchases are returned.
+     * This method uses a cache of Google Play Store app without initiating a network request.
+     */
+
+    fun fetchPurchases() {
+        // Clear lists
+        _purchases.clear()
 
         // Determine product types to be fetched
         val hasInApp = userQueryList.any { it.first == BillingClient.ProductType.INAPP }
@@ -195,20 +233,20 @@ internal class BillingRepository(context: Context) {
      */
 
     private fun processPurchases() {
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO + job).launch {
             Result.setResultState(ResultState.CONSOLE_PURCHASE_PRODUCTS_RESPONSE_PROCESSING)
             val resultList = ArrayList<PurchaseDetail>()
 
             val completePurchaseList = purchases.map { purchase ->
-                val productParams = billingUtility.getParams(userQueryList, purchase.products)
-                val productDetailsList = billingUtility.queryProductDetailsAsync(productParams)
+                val productParams = queryUtils.getPurchaseParams(userQueryList, purchase.products)
+                val productDetailsList = queryUtils.queryProductDetailsAsync(productParams)
                 CompletePurchase(purchase, productDetailsList)
             }
 
             completePurchaseList.forEach { completePurchase ->
                 completePurchase.productDetailList.forEach { productDetails ->
                     val productType = if (productDetails.productType == ProductType.INAPP.toString()) ProductType.INAPP else ProductType.SUBS
-                    val planId = billingUtility.getPlanId(productDetails.subscriptionOfferDetails)
+                    val planId = queryUtils.getPlanId(productDetails.subscriptionOfferDetails)
 
                     val purchaseDetail = PurchaseDetail(
                         productId = productDetails.productId,
@@ -225,7 +263,7 @@ internal class BillingRepository(context: Context) {
             Result.setResultState(ResultState.CONSOLE_PURCHASE_PRODUCTS_RESPONSE_COMPLETE)
             Result.setResultState(ResultState.CONSOLE_PURCHASE_PRODUCTS_CHECKED_FOR_ACKNOWLEDGEMENT)
 
-            billingUtility.checkForAcknowledgements(purchases)
+            queryUtils.checkForAcknowledgements(purchases)
 
             withContext(Dispatchers.Main) {
                 _purchasesSharedFlow.emit(resultList)
@@ -233,9 +271,170 @@ internal class BillingRepository(context: Context) {
         }
     }
 
+    /* ---------------------------------------------------------------------------------------------------- */
+    /* ------------------------------------------ Query Products ------------------------------------------ */
+    /* ---------------------------------------------------------------------------------------------------- */
+
+    fun fetchStoreProducts() {
+        CoroutineScope(Dispatchers.IO + job).launch {
+            Result.setResultState(ResultState.CONSOLE_QUERY_PRODUCTS_FETCHING)
+
+            val productDetailList = arrayListOf<ProductDetail>()
+            val queryProductDetail = arrayListOf<QueryProductDetail>()
+
+            val productParams = queryUtils.getProductParams(userQueryList)
+            val productDetailsList = queryUtils.queryProductDetailsAsync(productParams)
+
+            productDetailsList.forEach { productDetails ->
+                when (productDetails.productType) {
+                    ProductType.INAPP.toString() -> {
+                        val productDetail = ProductDetail(
+                            productId = productDetails.productId,
+                            planId = "",
+                            productTitle = productDetails.title,
+                            planTitle = "",
+                            productType = ProductType.INAPP,
+                            currencyCode = productDetails.oneTimePurchaseOfferDetails?.priceCurrencyCode.toString(),
+                            price = productDetails.oneTimePurchaseOfferDetails?.formattedPrice.toString().removeSuffix(".00"),
+                            priceAmountMicros = productDetails.oneTimePurchaseOfferDetails?.priceAmountMicros ?: 0L,
+                            billingPeriod = ""
+                        )
+                        productDetailList.add(productDetail)
+                        queryProductDetail.add(QueryProductDetail(productDetail, productDetails))
+                    }
+
+                    ProductType.SUBS.toString() -> {
+                        productDetails.subscriptionOfferDetails?.let { offersList ->
+                            offersList.forEach { offer ->       // Weekly, Monthly, etc
+                                val planTitle = queryUtils.getPlanTitle(offer)
+                                val pricingPhase = queryUtils.getPricingOffer(offer)
+                                pricingPhase?.let {
+                                    val productDetail = ProductDetail(
+                                        productId = productDetails.productId,
+                                        planId = offer.basePlanId,
+                                        productTitle = productDetails.title,
+                                        planTitle = planTitle,
+                                        productType = ProductType.SUBS,
+                                        currencyCode = pricingPhase.priceCurrencyCode,
+                                        price = pricingPhase.formattedPrice,
+                                        priceAmountMicros = pricingPhase.priceAmountMicros,
+                                        billingPeriod = pricingPhase.billingPeriod,
+                                    )
+                                    productDetailList.add(productDetail)
+                                    queryProductDetail.add(QueryProductDetail(productDetail, productDetails))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Result.setResultState(ResultState.CONSOLE_QUERY_PRODUCTS_COMPLETED)
+
+            _storeProductDetailsList.clear()
+            _storeProductDetailsList.addAll(queryProductDetail)
+            _productDetailsLiveData.postValue(productDetailList)
+        }
+    }
+
+    /* ---------------------------------------------------------------------------------------------------- */
+    /* ---------------------------------------- Product Purchases ----------------------------------------- */
+    /* ---------------------------------------------------------------------------------------------------- */
+
+    fun purchaseInApp(activity: Activity?, productId: String, onPurchaseListener: OnPurchaseListener) {
+        this.onPurchaseListener = onPurchaseListener
+
+        val errorMessage = validationUtils.checkForInApp(activity, productId)
+
+        if (errorMessage != null) {
+            onPurchaseListener.onPurchaseResult(false, message = errorMessage)
+            return
+        }
+
+        val productDetail = storeProductDetailsList.find {
+            it.productDetail.productId == productId
+                    && it.productDetail.productType == ProductType.INAPP
+        }
+        productDetail?.let {
+            launchFlow(activity = activity!!, it.productDetails)
+        } ?: run {
+            Result.setResultState(ResultState.CONSOLE_PRODUCTS_IN_APP_NOT_EXIST)
+            onPurchaseListener.onPurchaseResult(false, message = ResultState.CONSOLE_PRODUCTS_IN_APP_NOT_EXIST.message)
+        }
+    }
+
+    fun purchaseSubs(activity: Activity?, productId: String, planId: String, onPurchaseListener: OnPurchaseListener) {
+        this.onPurchaseListener = onPurchaseListener
+
+        val errorMessage = validationUtils.checkForSubs(activity, productId)
+
+        if (errorMessage != null) {
+            onPurchaseListener.onPurchaseResult(false, message = errorMessage)
+            return
+        }
+
+        val productDetail = storeProductDetailsList.find {
+            it.productDetail.productId == productId
+                    && it.productDetail.planId == planId
+                    && it.productDetail.productType == ProductType.SUBS
+        }
+        productDetail?.let {
+            launchFlow(activity = activity!!, it.productDetails)
+        } ?: run {
+            Result.setResultState(ResultState.CONSOLE_PRODUCTS_SUB_NOT_EXIST)
+            onPurchaseListener.onPurchaseResult(false, message = ResultState.CONSOLE_PRODUCTS_SUB_NOT_EXIST.message)
+        }
+    }
+
+    private fun launchFlow(activity: Activity, productDetails: ProductDetails) {
+        val paramsList = listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(productDetails).build())
+        val flowParams = BillingFlowParams.newBuilder().setProductDetailsParamsList(paramsList).build()
+        billingClient.launchBillingFlow(activity, flowParams)
+    }
 
     private val purchasesListener = PurchasesUpdatedListener { billingResult, purchasesList ->
+        val response = BillingResponse(billingResult.responseCode)
+        when {
+            response.isOk -> {
+                Result.setResultState(ResultState.PURCHASING_SUCCESSFULLY)
+                handlePurchase(purchasesList)
+                return@PurchasesUpdatedListener
+            }
 
+            response.canFailGracefully -> {
+                Result.setResultState(ResultState.PURCHASING_ALREADY_OWNED)
+                onPurchaseListener?.onPurchaseResult(true, ResultState.PURCHASING_ALREADY_OWNED.message)
+                return@PurchasesUpdatedListener
+            }
+
+            response.isUserCancelled -> Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_USER_CANCELLED)
+            response.isRecoverableError -> Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_EXCEPTION_FOUND)
+            response.isNonrecoverableError -> Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_EXCEPTION_FOUND)
+            response.isTerribleFailure -> Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_EXCEPTION_FOUND)
+        }
+        onPurchaseListener?.onPurchaseResult(false, Result.getResultState().message)
+    }
+
+    private fun handlePurchase(purchasesList: MutableList<Purchase>?) = CoroutineScope(Dispatchers.Main).launch {
+        if (purchasesList == null) {
+            Result.setResultState(ResultState.PURCHASING_NO_PURCHASES_FOUND)
+            onPurchaseListener?.onPurchaseResult(false, ResultState.PURCHASING_NO_PURCHASES_FOUND.message)
+            return@launch
+        }
+        queryUtils.checkForAcknowledgements(purchasesList)
+
+        purchasesList.forEach { purchase ->
+            when (purchase.purchaseState) {
+                Purchase.PurchaseState.PURCHASED -> {
+                    Result.setResultState(ResultState.PURCHASING_SUCCESSFULLY)
+                    onPurchaseListener?.onPurchaseResult(true, ResultState.PURCHASING_SUCCESSFULLY.message)
+                }
+
+                else -> {
+                    Result.setResultState(ResultState.PURCHASING_FAILURE)
+                    onPurchaseListener?.onPurchaseResult(true, ResultState.PURCHASING_FAILURE.message)
+                }
+            }
+        }
     }
 
     /**
@@ -243,17 +442,20 @@ internal class BillingRepository(context: Context) {
      */
 
     fun endConnection() {
+        job.cancel()
         if (billingClient.isReady) {
             billingClient.endConnection()
         }
     }
 }
 
-
 @JvmInline
 value class BillingResponse(private val code: Int) {
     val isOk: Boolean
         get() = code == BillingClient.BillingResponseCode.OK
+
+    val isUserCancelled: Boolean
+        get() = code == BillingClient.BillingResponseCode.USER_CANCELED
 
     val canFailGracefully: Boolean
         get() = code == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED

@@ -60,7 +60,6 @@ internal open class BillingRepository(context: Context) {
     private val _purchasesSharedFlow = MutableSharedFlow<List<PurchaseDetail>>()
     val purchasesSharedFlow = _purchasesSharedFlow.asSharedFlow()
 
-
     private val _productDetailsLiveData = MutableLiveData<List<ProductDetail>>()
     val productDetailsLiveData: LiveData<List<ProductDetail>> = _productDetailsLiveData
 
@@ -87,7 +86,6 @@ internal open class BillingRepository(context: Context) {
     // Listeners
     private var onPurchaseListener: OnPurchaseListener? = null
 
-
     /**
      *  Step 1: Billing Connection
      *   @see startConnection
@@ -101,6 +99,11 @@ internal open class BillingRepository(context: Context) {
      *  Step 3: Purchase History -> Subs
      *
      */
+
+    /**
+     *  Get a single testing product_id ("android.test.purchased")
+     */
+    protected fun getDebugProductIDList() = "android.test.item_unavailable"
 
     /* ---------------------------------------------------------------------------------------------------- */
     /* ---------------------------------------- Billing Connection ---------------------------------------- */

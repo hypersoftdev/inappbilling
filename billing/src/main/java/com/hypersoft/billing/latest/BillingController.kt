@@ -24,6 +24,9 @@ internal class BillingController(context: Context) : BillingRepository(context) 
 
     private var job: Job? = null
 
+    val debugProductId =  getDebugProductIDList()
+    val productsObserver get() =   productDetailsLiveData
+
     fun startBillingConnection(
         userInAppPurchases: List<String>,
         userSubsPurchases: List<String>,

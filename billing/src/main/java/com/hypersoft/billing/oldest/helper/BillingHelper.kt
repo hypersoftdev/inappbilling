@@ -59,6 +59,7 @@ abstract class BillingHelper(private val context: Context) {
     private val productDetailList: List<ProductDetail> get() = _productDetailList.toList()
 
     private val _productDetailsLiveData = MutableLiveData<List<ProductDetail>>()
+    @Deprecated("deprecated", ReplaceWith("Use this instead [BillingManager#observeQueryProducts]"))
     val productDetailsLiveData: LiveData<List<ProductDetail>> = _productDetailsLiveData
 
 

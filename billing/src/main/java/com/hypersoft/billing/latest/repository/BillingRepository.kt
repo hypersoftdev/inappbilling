@@ -3,6 +3,7 @@ package com.hypersoft.billing.latest.repository
 import android.app.Activity
 import android.content.Context
 import android.util.Log
+import androidx.core.os.BundleCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.android.billingclient.api.BillingClient
@@ -102,7 +103,22 @@ internal open class BillingRepository(context: Context) {
      *   @see queryPurchases
      *   @see processPurchases
      *
-     *  Step 3: Purchase History -> Subs
+     *  Step 3: Product Queries -> InApps / Subs
+     *   @see fetchStoreProducts
+     *   @see queryStoreProducts
+     *   @see processStoreProducts
+     *
+     *  Step 4: Make Purchase or Update (upgrade/downgrade) -> InApps / Subs
+     *   @see purchaseInApp
+     *   @see purchaseSubs
+     *   @see launchFlow
+     *   @see updateSubs
+     *
+     *  Step 5: Handle purchase response
+     *   @see handlePurchase
+     *
+     *  Step 6: End Billing (destroy)
+     *   @see endConnection
      *
      */
 
@@ -168,9 +184,8 @@ internal open class BillingRepository(context: Context) {
         }
     }
 
-
     /* -------------------------------------------------------------------------------------------------- */
-    /* ---------------------------------------- Purchase History ---------------------------------------- */
+    /* ------------------------------------------ User Queries ------------------------------------------ */
     /* -------------------------------------------------------------------------------------------------- */
 
     protected fun setUserQueries(userInAppPurchases: List<String>, userSubsPurchases: List<String>) {
@@ -524,6 +539,7 @@ internal open class BillingRepository(context: Context) {
             response.isOk -> {
                 Result.setResultState(ResultState.PURCHASING_SUCCESSFULLY)
                 handlePurchase(purchasesList)
+                fetchPurchases()
                 return@PurchasesUpdatedListener
             }
 

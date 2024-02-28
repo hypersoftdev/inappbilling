@@ -1,13 +1,13 @@
 [![](https://jitpack.io/v/hypersoftdev/inappbilling.svg)](https://jitpack.io/#hypersoftdev/inappbilling)
-# inappbilling
+## inappbilling
 
 inappbilling is a [Google Play Billing](https://developer.android.com/google/play/billing/integrate) library that demonstrates InApp purchase in your Android application
 
-## Getting Started
+### Getting Started
 
-### Step 1
+#### Step A
 
-Add maven repository in project level build.gradle or in latest project setting.gradle file
+Add maven repository in project level `build.gradle(project)` or in latest project `setting.gradle` file
 ```
 repositories {
     google()
@@ -16,173 +16,260 @@ repositories {
 }
 ```  
 
+#### Step B
 
-# Pre-Release IMPLEMENTATION
-
-### Step 2
-
-Add inappbilling dependencies in App level build.gradle. Latest Version [![](https://jitpack.io/v/hypersoftdev/inappbilling.svg)](https://jitpack.io/#hypersoftdev/inappbilling)
+Add dependencies in App level `build.gradle(app)`. Latest Version [![](https://jitpack.io/v/hypersoftdev/inappbilling.svg)](https://jitpack.io/#hypersoftdev/inappbilling)
 ```
 dependencies {
     implementation 'com.github.hypersoftdev:inappbilling:x.x.x'
 }
-``` 
+```
 
-### Step 3
+---
 
-Declare BillingManger Variable, "this" can be an application context.
+## Pre-Release IMPLEMENTATION
 
-also declare your original productId e.g. packageName
+> [!TIP]
+> Observe the states by using `BillingManager` TAG
+
+### Step 1 (Initialize Billing)
+
+Initialize the `BillingManager` class, where the parameter 'context' refers to an application context.
 
 ```
-private val billingManager by lazy { BillingManager(this) }
-private val productId:String = "Paste your original Product ID"
-```  
+private val billingManager by lazy { BillingManager(context) }
+```
 
-#### Enable Subscription Check for Old Purchases
+### Step # 2 (Billing Connection)
+
+Retrieve a debugging ID for testing purposes by utilizing the `debugProductId` method. Ensure that the parameter `purchaseDetailList` represents a list containing all active purchases along with their respective details.
 
 ```
-billingManager.setCheckForSubscription(true)
-```  
-
-#### Billing Initializaiton
-
-Get debugging ids for testing using "getDebugProductIDList()" method
-
-```
-val productId = when (BuildConfig.DEBUG) {
-    true -> diComponent.billingManager.getDebugProductIDList()
-    false -> listOf(globalContext.packageName)
+val subsProductIdList = listOf("subs_product_id_1", "subs_product_id_2", "subs_product_id_3")
+val inAppProductIdList = when (BuildConfig.DEBUG) {
+    true -> listOf(billingManager.debugProductId)
+    false -> listOf("inapp_product_id_1", "inapp_product_id_2")
 }
 
-diComponent.billingManager.startConnection(productId, object : OnConnectionListener {
-    override fun onConnectionResult(isSuccess: Boolean, message: String) {
-        Log.d("TAG", "onConnectionResult: $isSuccess - $message")
-        binding.mbMakePurchase.isEnabled = isSuccess
+billingManager.initialize(
+    productInAppPurchases = inAppProductIdList,
+    productSubscriptions = subsProductIdList,
+    billingListener = object : BillingListener {
+        override fun onConnectionResult(isSuccess: Boolean, message: String) {
+            Log.d(TAG, "Billing: initBilling: onConnectionResult: isSuccess = $isSuccess - message = $message")
+            if (!isSuccess) {
+                proceedApp()
+            }
+    
+        override fun purchasesResult(purchaseDetailList: List<PurchaseDetail>) {
+            if (purchaseDetailList.isEmpty()) {
+                // No purchase found, reset all sharedPreferences (premium properies)
+            }
+            purchaseDetailList.forEachIndexed { index, purchaseDetail ->
+                Log.d(TAG, "Billing: initBilling: purchasesResult: $index) $purchaseDetail ")
+            }
+            proceedApp()
+        }
     }
-
-    override fun onOldPurchaseResult(isPurchased: Boolean, purchaseDetail: PurchaseDetail?) {
-        // Update your shared-preferences here!
-        Log.d("TAG", "onOldPurchaseResult: $isPurchased")
-    }
-})
-```
-Access the full details of the item you have currently purchased by utilizing the purchaseDetail method.
+)
 
 ```
-data class PurchaseDetail (
-    val productType: ProductType,    // e.g. SUBS/INAPP
-    val purchaseType: String,        // e.g. Weekly, Monthly, Yearly, etc
-    val purchaseTime: String         // e.g. 2023-01-01 12:00
+Access comprehensive details of the currently purchased item using the `PurchaseDetail` class.
+
+```
+@param productId: Product Id for both inapp/subs (e.g. product_ads/product_weekly_ads)
+@param planId: Plan Id for subs (e.g. plan_weekly_ads)
+@param productTitle: Title of the Product
+@param planTitle: Title of the Plan
+@param productType: Product purchase type (e.g. InApp/Subs)
+@param purchaseToken: a unique token for this purchase
+@param purchaseTime: For subscriptions, this is the subscription signup time. It won't change after renewal.
+@param purchaseTimeMillis: UnixTimeStamp (starts from Jan 1, 1970)
+@param isAutoRenewing: Only in case of 'BillingClient.ProductType.SUBS'
+
+data class PurchaseDetail(
+    val productId: String,
+    var planId: String,
+    var productTitle: String,
+    var planTitle: String,
+    val purchaseToken: String,
+    val productType: ProductType,
+    val purchaseTime: String,
+    val purchaseTimeMillis: Long,
+    val isAutoRenewing: Boolean,
 )
 ```
 
-#### Billing State Observer
+### Step # 3 (Query Product)
 
-Observe the states by using `BillingManager` TAG
-
-### Purchasing InApp
+This observer monitors all active in-app and subscription products.
 
 ```
-billingManager.makeInAppPurchase(activity, object : OnPurchaseListener {
-    override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
-        Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
-        Log.d("TAG", "makeInAppPurchase: $isPurchaseSuccess - $message")
-    }
-})
-```
+val subsProductIdList = listOf("subs_product_id_1", "subs_product_id_2", "subs_product_id_3")
+val subsPlanIdList = listOf("subs_plan_id_1", "subs_plan_id_2", "subs_plan_id_3")
 
-### Purchasing Subscription & Observe
+billingManager.observeQueryProducts().observe(viewLifecycleOwner) { productDetailList ->
+    Log.d(TAG, "Billing: initObservers: $productDetailList")
 
-```
-billingManager.makeSubPurchase(activity, SubscriptionPlans.basicPlanMonthly, object : OnPurchaseListener {
-    override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
-        Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
-        binding.mbMakePurchase.isEnabled = !isPurchaseSuccess
-    }
-})
-```
-
-#### SubscriptionTags
-
-Add plans and tags on Play Console
-There are few subsciption tags as follow, to generate plans.
-
-For Weekly Subscription
-
-    -> Product ID:          basic_product_weekly
-    -> Plan ID:             basic-plan-weekly
-
-For Montly Subscription
-
-    -> Product ID:          basic_product_monthly
-    -> Plan ID:             basic-plan-monthly
-
-For Yearly Subscription
-
-    -> Product ID:          basic_product_yearly
-    -> Plan ID:             basic-plan-yearly
-
-For 06 Months Subscription
-
-    -> Product ID:          basic_product_semi_yearly
-    -> Plan ID:             basic-plan-semi-yearly
-
-
-### Observe Dynamic Pricing
-
-The model class for `ProductDetail`
-
-```
-data class ProductDetail(
-    var productId: String,
-    var price: String,
-    var currencyCode: String,
-    var freeTrialPeriod: Int,
-    var priceAmountMicros: Long = 0,
-    var freeTrial: Boolean = false,
-    var productType: ProductType = ProductType.SUBS
-)
-```
-
-Following observer observes all the active subscription and in-App Product
-
-```
-billingManager.productDetailsLiveData.observe(this) { list ->
-    var month = 0L
-    var year = 0L
-    list.forEach { productDetail: ProductDetail ->
-        Log.d(TAG, "initObservers: $productDetail")
-        when (productDetail.productId) {
-            SubscriptionProductIds.basicProductMonthly -> {
-                //binding.mtvOfferPrice1.text = productDetail.price
-                month = productDetail.priceAmountMicros / 1000000
+    productDetailList.forEach { productDetail ->
+        if (productDetail.productType == ProductType.inapp) {
+            if (productDetail.productId == "inapp_product_id_1") {
+                // productDetail
+            } else if (productDetail.productId == "inapp_product_id_2") {
+                // productDetail
             }
-
-            SubscriptionProductIds.basicProductYearly -> {
-                //binding.mtvOfferPrice2.text = productDetail.price
-                year = productDetail.priceAmountMicros / 1000000
-            }
-
-            SubscriptionProductIds.basicProductSemiYearly -> {
-                //binding.mtvOfferPrice3Premium.text = productDetail.price
-            }
-
-            productId -> {
-                //binding.mtvOfferPrice3Premium.text = productDetail.price
+        } else {
+            if (productDetail.productId == "subs_product_id_1" && productDetail.planId == "subs_plan_id_1") {
+                // productDetail (monthly)
+            } else if (productDetail.productId == "subs_product_id_2" && productDetail.planId == "subs_plan_id_2") {
+                // productDetail (3 months)
+            } else if (productDetail.productId == "subs_product_id_3" && productDetail.planId == "subs_plan_id_3") {
+                // productDetail (yearly)
             }
         }
     }
-    // Best Offer
-    if (month == 0L || year == 0L) return@observe
-    val result = 100 - (year * 100 / (12 * month))
-    val text = "Save $result%"
-    //binding.mtvBestOffer.text = text
-
-    val perMonth = (year / 12L).toString()
-    //binding.mtvOffer.text = perMonth
 }
+
 ```
+Retrieve comprehensive details of the item using the `ProductDetail` class.
+
+```
+@param productId: Unique ID (Console's ID) for product
+@param planId: Unique ID (Console's ID) for plan
+@param productTitle: e.g. Gold Tier
+@param planTitle: e.g. Weekly, Monthly, Yearly, etc
+@param productType: e.g. InApp / Subs
+@param currencyCode: e.g. USD, PKR, etc
+@param price: e.g. Rs 750.00
+@param priceAmountMicros: e.g. 750000000
+@param freeTrialDays: e.g. 3, 5, 7, etc
+@param billingPeriod
+    - Weekly: P1W (One week)
+    - Every 4 weeks: P4W (Four weeks)
+    - Monthly: P1M (One month)
+    - Every 2 months (Bimonthly): P2M (Two months)
+    - Every 3 months (Quarterly): P3M (Three months)
+    - Every 4 months: P4M (Four months)
+    - Every 6 months (Semiannually): P6M (Six months)
+    - Every 8 months: P8M (Eight months)
+    - Yearly: P1Y (One year)
+
+data class ProductDetail(
+    var productId: String,
+    var planId: String,
+    var productTitle: String,
+    var planTitle: String,
+    var productType: ProductType,
+    var currencyCode: String,
+    var price: String,
+    var priceAmountMicros: Long = 0,
+    var freeTrialDays: Int = 0,
+    var billingPeriod: String,
+)
+```
+
+### Step # 4 (Make purchases)
+### Purchasing InApp
+
+```
+billingManager.makeInAppPurchase(activity, productId, object : OnPurchaseListener {
+    override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
+        Log.d(TAG, "makeInAppPurchase: $isPurchaseSuccess - $message")
+    }
+})
+
+```
+
+### Purchasing Subscription
+
+```
+billingManager.makeSubPurchase(activity, productId, planId, object : OnPurchaseListener {
+    override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
+        Log.d(TAG, "makeSubPurchase: $isPurchaseSuccess - $message")
+    }
+})
+```
+
+### Updating Subscription
+
+```
+billingManager.updateSubPurchase(
+    activity,
+    oldProductId = "subs_product_id_1",
+    oldPlanId = "subs_plan_id_1",
+    productId = "subs_product_id_2",
+    planId = "subs_plan_id_2",
+    object : OnPurchaseListener {
+        override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
+            Log.d(TAG, "updateSubPurchase: $isPurchaseSuccess - $message")
+        }
+    }
+)
+
+```
+## Guidance
+
+### SubscriptionTags
+
+To add products and plans on the Play Console, consider using the following recommended subscription tags to generate plans.
+
+- Product (Bronze)
+  
+    -- Plan (Weekly)
+    -- Plan (Monthly)
+    -- Plan (Yearly)
+  
+- Product (Silver)
+  
+    -- Plan (Weekly)
+    -- Plan (Monthly)
+    -- Plan (Yearly)
+  
+- Product (Gold)
+  
+    -- Plan (Weekly)
+    -- Plan (Monthly)
+    -- Plan (Yearly)
+
+
+For Bronze Subscription
+
+    -> Product ID:          bronze_product
+        -- Plan ID:             bronze_plan_weekly
+        -- Plan ID:             bronze_plan_monthly
+        -- Plan ID:             bronze_plan_yearly
+
+For Silver Subscription
+
+    -> Product ID:          silver_product
+        -- Plan ID:             silver_plan_weekly
+        -- Plan ID:             silver_plan_monthly
+        -- Plan ID:             silver_plan_yearly
+
+For Gold Subscription
+
+    -> Product ID:          gold_product
+        -- Plan ID:             gold_plan_weekly
+        -- Plan ID:             gold_plan_monthly
+        -- Plan ID:             gold_plan_yearly
+
+and so on...
+
+### Billing Period (subscription)
+
+The following billing periods for subscriptions are fixed and cannot be altered.
+
+    - Weekly
+    - Every 4 weeks
+    - Monthly
+    - Every 2 months (Bimonthly)
+    - Every 3 months (Quarterly)
+    - Every 4 months 
+    - Every 6 months (Semiannually)
+    - Every 8 months
+    - Yearly
+
+---
 
 # LICENSE
 

@@ -11,16 +11,16 @@ import com.hypersoft.billing.common.dataClasses.ProductType
  */
 
 /**
- * @property productId: Unique ID (Console's ID) for product
- * @property planId: Unique ID (Console's ID) for plan
- * @property productTitle: e.g. Gold Tier
- * @property planTitle: e.g. Weekly, Monthly, Yearly, etc
- * @property productType: e.g. InApp / Subs
- * @property currencyCode: e.g. USD, PKR, etc
- * @property price: e.g. Rs 750.00
- * @property priceAmountMicros: e.g. 750000000
- * @property freeTrialDays: e.g. 3, 5, 7, etc
- * @property billingPeriod
+ * @param productId: Unique ID (Console's ID) for product
+ * @param planId: Unique ID (Console's ID) for plan
+ * @param productTitle: e.g. Gold Tier
+ * @param planTitle: e.g. Weekly, Monthly, Yearly, etc
+ * @param productType: e.g. InApp / Subs
+ * @param currencyCode: e.g. USD, PKR, etc
+ * @param price: e.g. Rs 750.00
+ * @param priceAmountMicros: e.g. 750000000
+ * @param freeTrialDays: e.g. 3, 5, 7, etc
+ * @param billingPeriod
  * - Weekly: P1W (One week)
  * - Every 4 weeks: P4W (Four weeks)
  * - Monthly: P1M (One month)

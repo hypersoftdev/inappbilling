@@ -1,4 +1,4 @@
-package com.hypersoft.billing.helper
+package com.hypersoft.billing.oldest.helper
 
 import android.app.Activity
 import android.content.Context
@@ -21,18 +21,18 @@ import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.queryProductDetails
-import com.hypersoft.billing.constants.SubscriptionPlans
-import com.hypersoft.billing.constants.SubscriptionProductIds
-import com.hypersoft.billing.dataClasses.ProductDetail
-import com.hypersoft.billing.dataClasses.PurchaseDetail
-import com.hypersoft.billing.dataProvider.DataProviderInApp
-import com.hypersoft.billing.dataProvider.DataProviderSub
-import com.hypersoft.billing.enums.BillingState
-import com.hypersoft.billing.enums.ProductType
-import com.hypersoft.billing.interfaces.OnConnectionListener
-import com.hypersoft.billing.interfaces.OnPurchaseListener
-import com.hypersoft.billing.status.State.getBillingState
-import com.hypersoft.billing.status.State.setBillingState
+import com.hypersoft.billing.oldest.constants.SubscriptionPlans
+import com.hypersoft.billing.oldest.constants.SubscriptionProductIds
+import com.hypersoft.billing.oldest.dataClasses.ProductDetail
+import com.hypersoft.billing.oldest.dataClasses.PurchaseDetail
+import com.hypersoft.billing.oldest.dataProvider.DataProviderInApp
+import com.hypersoft.billing.oldest.dataProvider.DataProviderSub
+import com.hypersoft.billing.oldest.enums.BillingState
+import com.hypersoft.billing.common.dataClasses.ProductType
+import com.hypersoft.billing.oldest.interfaces.OnConnectionListener
+import com.hypersoft.billing.common.interfaces.OnPurchaseListener
+import com.hypersoft.billing.oldest.status.State.getBillingState
+import com.hypersoft.billing.oldest.status.State.setBillingState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -41,7 +41,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@Suppress("unused")
 abstract class BillingHelper(private val context: Context) {
 
     private val dataProviderInApp by lazy { DataProviderInApp() }
@@ -60,6 +59,7 @@ abstract class BillingHelper(private val context: Context) {
     private val productDetailList: List<ProductDetail> get() = _productDetailList.toList()
 
     private val _productDetailsLiveData = MutableLiveData<List<ProductDetail>>()
+    @Deprecated("deprecated", ReplaceWith("Use this instead [BillingManager#observeQueryProducts]"))
     val productDetailsLiveData: LiveData<List<ProductDetail>> = _productDetailsLiveData
 
 
@@ -77,6 +77,7 @@ abstract class BillingHelper(private val context: Context) {
     /**
      *  Get a single testing product_id ("android.test.purchased")
      */
+    @Deprecated("")
     fun getDebugProductIDList() = dataProviderInApp.getDebugProductIDList()
 
     /**
@@ -103,7 +104,7 @@ abstract class BillingHelper(private val context: Context) {
         billingClient.startConnection(object : BillingClientStateListener {
             override fun onBillingServiceDisconnected() {
                 setBillingState(BillingState.CONNECTION_DISCONNECTED)
-                Handler(Looper.getMainLooper()).post {
+                CoroutineScope(Dispatchers.Main).launch {
                     onConnectionListener.onConnectionResult(false, BillingState.CONNECTION_DISCONNECTED.message)
                 }
             }
@@ -114,7 +115,9 @@ abstract class BillingHelper(private val context: Context) {
                     proceedBilling()
                 } else {
                     setBillingState(BillingState.CONNECTION_FAILED)
-                    onConnectionListener.onConnectionResult(false, billingResult.debugMessage)
+                    CoroutineScope(Dispatchers.Main).launch {
+                        onConnectionListener.onConnectionResult(false, billingResult.debugMessage)
+                    }
                 }
             }
         })
@@ -291,7 +294,7 @@ abstract class BillingHelper(private val context: Context) {
                     item.productId = it.productId
                     item.price = it.oneTimePurchaseOfferDetails?.formattedPrice.toString().removeSuffix(".00")
                     item.currencyCode = it.oneTimePurchaseOfferDetails?.priceCurrencyCode.toString()
-                    item.productType = ProductType.INAPP
+                    item.productType = ProductType.inapp
                     item.priceAmountMicros = it.oneTimePurchaseOfferDetails?.priceAmountMicros ?: 0L
 
                     _productDetailList.add(item)

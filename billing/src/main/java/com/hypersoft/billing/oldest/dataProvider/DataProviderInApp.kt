@@ -1,12 +1,12 @@
-package com.hypersoft.billing.dataProvider
+package com.hypersoft.billing.oldest.dataProvider
 
 
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.QueryProductDetailsParams
-import com.hypersoft.billing.dataClasses.PurchaseDetail
-import com.hypersoft.billing.enums.ProductType
+import com.hypersoft.billing.oldest.dataClasses.PurchaseDetail
+import com.hypersoft.billing.common.dataClasses.ProductType
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -67,6 +67,6 @@ internal class DataProviderInApp {
     /* ---------------------------------------------------- Purchase Details ---------------------------------------------------- */
 
     fun getPurchaseDetail(simpleDateFormat: SimpleDateFormat, purchase: Purchase): PurchaseDetail {
-        return PurchaseDetail(productType = ProductType.INAPP, purchaseType = "Lifetime", purchaseTime = simpleDateFormat.format(Date(purchase.purchaseTime)))
+        return PurchaseDetail(productType = ProductType.inapp, purchaseType = "Lifetime", purchaseTime = simpleDateFormat.format(Date(purchase.purchaseTime)))
     }
 }

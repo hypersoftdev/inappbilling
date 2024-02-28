@@ -1,6 +1,6 @@
-package com.hypersoft.billing.dataClasses
+package com.hypersoft.billing.oldest.dataClasses
 
-import com.hypersoft.billing.enums.ProductType
+import com.hypersoft.billing.common.dataClasses.ProductType
 
 /**
  * @Author: SOHAIB AHMED
@@ -9,8 +9,9 @@ import com.hypersoft.billing.enums.ProductType
  *      -> https://github.com/epegasus
  *      -> https://stackoverflow.com/users/20440272/sohaib-ahmed
  */
+
 /**
- * @property productId: Unique ID (Console's ID
+ * @property productId: Unique ID (Console's ID)
  * @property price: e.g. Rs 750.00
  * @property currencyCode: e.g. USD, PKR, etc
  * @property freeTrialPeriod: e.g. 3, 5, 7
@@ -25,7 +26,7 @@ data class ProductDetail(
     var freeTrialPeriod: Int,
     var priceAmountMicros: Long = 0,
     var freeTrial: Boolean = false,
-    var productType: ProductType = ProductType.SUBS
+    var productType: ProductType = ProductType.subs
 ) {
     constructor() : this(productId = "", price = "", currencyCode = "", 0, 0, false)
 }

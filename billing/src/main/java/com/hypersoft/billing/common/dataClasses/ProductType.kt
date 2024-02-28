@@ -1,4 +1,4 @@
-package com.hypersoft.billing.enums
+package com.hypersoft.billing.common.dataClasses
 
 /**
  * @Author: SOHAIB AHMED
@@ -9,6 +9,6 @@ package com.hypersoft.billing.enums
  */
 
 enum class ProductType {
-    INAPP,
-    SUBS
+    inapp,
+    subs
 }

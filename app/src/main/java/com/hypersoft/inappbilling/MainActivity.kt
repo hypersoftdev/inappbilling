@@ -7,29 +7,123 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.hypersoft.billing.BillingManager
-import com.hypersoft.billing.constants.SubscriptionPlans
-import com.hypersoft.billing.constants.SubscriptionProductIds
-import com.hypersoft.billing.dataClasses.ProductDetail
-import com.hypersoft.billing.dataClasses.PurchaseDetail
-import com.hypersoft.billing.helper.BillingHelper.Companion.TAG
-import com.hypersoft.billing.interfaces.OnPurchaseListener
-import com.hypersoft.billing.status.State
-import com.hypersoft.billing.interfaces.OnConnectionListener
+import com.hypersoft.billing.common.interfaces.OnPurchaseListener
+import com.hypersoft.billing.latest.dataClasses.PurchaseDetail
+import com.hypersoft.billing.latest.interfaces.BillingListener
+import com.hypersoft.billing.oldest.constants.SubscriptionPlans
+import com.hypersoft.billing.oldest.constants.SubscriptionProductIds
+import com.hypersoft.billing.oldest.dataClasses.ProductDetail
+import com.hypersoft.billing.oldest.interfaces.OnConnectionListener
+import com.hypersoft.billing.oldest.status.State
+
+const val TAG = "MyTag"
 
 class MainActivity : AppCompatActivity() {
 
     private val billingManager by lazy { BillingManager(this) }
-    private lateinit var tvTitle: TextView
 
-    // mostly people use package name in their
+    // Old way
+    private lateinit var tvTitle: TextView
     private val productId: String = "Paste your original Product ID"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        newWay()
+        oldWay()
+    }
+
+    /* -------------------------------------------------- New Way -------------------------------------------------- */
+
+    /**
+     *  Suppose there's been a subscription structure as follow: - ProductID, -- PlanID
+     *   - Bronze
+     *      -- Weekly
+     *      -- Monthly
+     *      -- Quarterly (3 Months)
+     *      -- Yearly
+     *   - Silver
+     *      -- Weekly
+     *      -- Monthly
+     *      -- Quarterly (3 Months)
+     *      -- Yearly
+     *   - Gold
+     *      -- Weekly
+     *      -- Monthly
+     *      -- Quarterly (3 Months)
+     *      -- Yearly
+     *   - Platinum
+     *      -- Weekly
+     *      -- Monthly
+     *      -- Quarterly (3 Months)
+     *      -- Yearly
+     */
+
+    private fun newWay() {
+        val productIds = when (BuildConfig.DEBUG) {
+            true -> listOf(billingManager.debugProductId)
+            false -> listOf("abc", "def")
+        }
+
+        billingManager.initialize(
+            productInAppPurchases = productIds,
+            productSubscriptions = listOf("Bronze", "Silver", "Gold", "Yearly"),
+            billingListener = billingListener
+        )
+        initNewObserver()
+    }
+
+    private fun initNewObserver() {
+        billingManager.observeQueryProducts().observe(this) { productDetailList ->
+            Log.d(TAG, "initNewObserver: --------------------------------------")
+            productDetailList.forEach { productDetail ->
+                Log.d(TAG, "---: $productDetail")
+            }
+        }
+    }
+
+    private val billingListener = object : BillingListener {
+        override fun onConnectionResult(isSuccess: Boolean, message: String) {
+            Log.d(TAG, "onConnectionResult: isSuccess: $isSuccess, message: $message")
+            if (!isSuccess) {
+                proceedApp()
+            }
+        }
+
+        override fun purchasesResult(purchaseDetailList: List<PurchaseDetail>) {
+            proceedApp()
+        }
+    }
+
+    private fun proceedApp() {
+        // your code here...
+    }
+
+    private fun onPurchaseNewClick() {
+        // In-App
+        billingManager.makeInAppPurchase(this, billingManager.debugProductId, newPurchaseListener)
+
+        // Subscription
+        billingManager.makeSubPurchase(this, "product_abc", "plan_abc", newPurchaseListener)
+    }
+
+    private val newPurchaseListener = object : OnPurchaseListener {
+        override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
+            showMessage(message)
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        billingManager.destroyBilling()
+    }
+
+    /* -------------------------------------------------- Old Way -------------------------------------------------- */
+
+    private fun oldWay() {
         initBilling()
-        initObserver()
+        initOldObserver()
 
         tvTitle = findViewById(R.id.tv_title)
         findViewById<Button>(R.id.btn_purchase).setOnClickListener {
@@ -37,7 +131,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun initObserver() {
+    private fun initOldObserver() {
         State.billingState.observe(this) {
             Log.d("BillingManager", "initObserver: $it")
             tvTitle.text = it.toString()
@@ -82,26 +176,31 @@ class MainActivity : AppCompatActivity() {
 
     private fun initBilling() {
         billingManager.setCheckForSubscription(true)
+        val productIds = when (BuildConfig.DEBUG) {
+            true -> billingManager.getDebugProductIDList()
+            false -> listOf(productId)
+        }
+
         if (BuildConfig.DEBUG) {
-            billingManager.startConnection(billingManager.getDebugProductIDList(), object : OnConnectionListener {
+            billingManager.startConnection(productIds, object : OnConnectionListener {
                 override fun onConnectionResult(isSuccess: Boolean, message: String) {
                     showMessage(message)
                     Log.d("TAG", "onConnectionResult: $isSuccess - $message")
                 }
 
-                override fun onOldPurchaseResult(isPurchased: Boolean, purchaseDetail: PurchaseDetail?) {
+                override fun onOldPurchaseResult(isPurchased: Boolean, purchaseDetail: com.hypersoft.billing.oldest.dataClasses.PurchaseDetail?) {
                     // Update your shared-preferences here!
                     Log.d("TAG", "onOldPurchaseResult: $isPurchased")
                 }
             })
         } else {
-            billingManager.startConnection(listOf(productId), object : OnConnectionListener {
+            billingManager.startConnection(productIds, object : OnConnectionListener {
                 override fun onConnectionResult(isSuccess: Boolean, message: String) {
                     showMessage(message)
                     Log.d("TAG", "onConnectionResult: $isSuccess - $message")
                 }
 
-                override fun onOldPurchaseResult(isPurchased: Boolean, purchaseDetail: PurchaseDetail?) {
+                override fun onOldPurchaseResult(isPurchased: Boolean, purchaseDetail: com.hypersoft.billing.oldest.dataClasses.PurchaseDetail?) {
                     // Update your shared-preferences here!
                     Log.d("TAG", "onOldPurchaseResult: $isPurchased")
                 }
@@ -112,18 +211,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun onPurchaseClick() {
         // In-App
-        /*billingManager.makeInAppPurchase(this, object : OnPurchaseListener {
-            override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
-                showMessage(message)
-            }
-        })*/
+        billingManager.makeInAppPurchase(this, oldPurchaseListener)
 
         // Subscription
-        billingManager.makeSubPurchase(this, SubscriptionPlans.basicPlanMonthly, object : OnPurchaseListener {
-            override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
-                showMessage(message)
-            }
-        })
+        billingManager.makeSubPurchase(this, SubscriptionPlans.basicPlanMonthly, oldPurchaseListener)
+    }
+
+    private val oldPurchaseListener = object : OnPurchaseListener {
+        override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
+            showMessage(message)
+        }
     }
 
     private fun showMessage(message: String) {

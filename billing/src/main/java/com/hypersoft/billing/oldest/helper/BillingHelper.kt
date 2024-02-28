@@ -77,6 +77,7 @@ abstract class BillingHelper(private val context: Context) {
     /**
      *  Get a single testing product_id ("android.test.purchased")
      */
+    @Deprecated("")
     fun getDebugProductIDList() = dataProviderInApp.getDebugProductIDList()
 
     /**
@@ -293,7 +294,7 @@ abstract class BillingHelper(private val context: Context) {
                     item.productId = it.productId
                     item.price = it.oneTimePurchaseOfferDetails?.formattedPrice.toString().removeSuffix(".00")
                     item.currencyCode = it.oneTimePurchaseOfferDetails?.priceCurrencyCode.toString()
-                    item.productType = ProductType.INAPP
+                    item.productType = ProductType.inapp
                     item.priceAmountMicros = it.oneTimePurchaseOfferDetails?.priceAmountMicros ?: 0L
 
                     _productDetailList.add(item)

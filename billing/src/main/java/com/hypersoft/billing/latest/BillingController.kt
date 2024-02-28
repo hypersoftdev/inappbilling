@@ -72,6 +72,17 @@ internal class BillingController(context: Context) : BillingRepository(context) 
         purchaseSubs(activity = activity, productId = productId, planId = planId, onPurchaseListener = onPurchaseListener)
     }
 
+    fun updatePurchaseSub(
+        activity: Activity?,
+        oldProductId: String,
+        oldPlanId: String,
+        productId: String,
+        planId: String,
+        onPurchaseListener: OnPurchaseListener
+    ) {
+        updateSubs(activity = activity, oldProductId = oldProductId, oldPlanId = oldPlanId, productId = productId, planId = planId, onPurchaseListener = onPurchaseListener)
+    }
+
     fun cleanBilling() {
         endConnection()
         job?.cancel()

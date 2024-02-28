@@ -107,6 +107,32 @@ internal class QueryUtils(private val billingClient: BillingClient) {
         }
     }
 
+    fun getPlanTitle(billingPeriod: String): String {
+        return when (billingPeriod) {
+            "P1W" -> "Weekly"
+            "P4W" -> "Four weeks"
+            "P1M" -> "Monthly"
+            "P2M" -> "2 months"
+            "P3M" -> "3 months"
+            "P4M" -> "4 months"
+            "P6M" -> "6 months"
+            "P8M" -> "8 months"
+            "P1Y" -> "Yearly"
+            else -> ""
+        }
+    }
+
+    fun getTrialDay(subscriptionOfferDetailList: ProductDetails.SubscriptionOfferDetails): Int {
+        val pricingPhase = getPricingOffer(subscriptionOfferDetailList)
+        return when (pricingPhase?.billingPeriod) {
+            "P3D" -> 3
+            "P5D" -> 5
+            "P7D" -> 7
+            "P1M" -> 30
+            else -> 0
+        }
+    }
+
     /**
      *  - The first item in the List returned by my getSubscriptionOfferDetails() is the offer scheme,
      *  - The second item is the regular scheme without any offer.
@@ -148,7 +174,7 @@ internal class QueryUtils(private val billingClient: BillingClient) {
      * For example, the lowest average price in terms of month could be returned instead.
      */
 
-    fun getPricingOffer(offer: ProductDetails.SubscriptionOfferDetails): ProductDetails.PricingPhase? {
+    private fun getPricingOffer(offer: ProductDetails.SubscriptionOfferDetails): ProductDetails.PricingPhase? {
         var leastPricingPhase: ProductDetails.PricingPhase? = null
         var lowestPrice = Int.MAX_VALUE
         offer.pricingPhases.pricingPhaseList.forEach { pricingPhase ->
@@ -158,6 +184,33 @@ internal class QueryUtils(private val billingClient: BillingClient) {
             }
         }
         return leastPricingPhase
+    }
+
+    /* ------------------------------- Purchase Subs ------------------------------- */
+
+    fun getOfferToken(subscriptionOfferDetails: List<ProductDetails.SubscriptionOfferDetails>?, planId: String): String {
+        val eligibleOffers = arrayListOf<ProductDetails.SubscriptionOfferDetails>()
+        subscriptionOfferDetails?.forEach { offerDetail ->
+            if (offerDetail.offerTags.contains(planId)) {
+                eligibleOffers.add(offerDetail)
+            }
+        }
+
+        var offerToken = String()
+        var leastPricedOffer: ProductDetails.SubscriptionOfferDetails
+        var lowestPrice = Int.MAX_VALUE
+
+        eligibleOffers.forEach { offer ->
+            for (price in offer.pricingPhases.pricingPhaseList) {
+                if (price.priceAmountMicros < lowestPrice) {
+                    lowestPrice = price.priceAmountMicros.toInt()
+                    leastPricedOffer = offer
+                    offerToken = leastPricedOffer.offerToken
+                }
+            }
+        }
+
+        return offerToken
     }
 
     /* ------------------------------- Acknowledge purchases ------------------------------- */
@@ -185,4 +238,3 @@ internal class QueryUtils(private val billingClient: BillingClient) {
         }
     }
 }
-

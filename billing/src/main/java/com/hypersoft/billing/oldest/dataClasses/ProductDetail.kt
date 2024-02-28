@@ -26,7 +26,7 @@ data class ProductDetail(
     var freeTrialPeriod: Int,
     var priceAmountMicros: Long = 0,
     var freeTrial: Boolean = false,
-    var productType: ProductType = ProductType.SUBS
+    var productType: ProductType = ProductType.subs
 ) {
     constructor() : this(productId = "", price = "", currencyCode = "", 0, 0, false)
 }

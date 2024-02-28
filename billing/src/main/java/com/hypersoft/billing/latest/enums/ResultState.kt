@@ -39,13 +39,17 @@ enum class ResultState(val message: String) {
     CONSOLE_PURCHASE_PRODUCTS_CHECKED_FOR_ACKNOWLEDGEMENT("InApp, Subs -> Acknowledging purchases if not acknowledge yet"),
 
     // Querying
-    CONSOLE_QUERY_PRODUCTS_FETCHING("InApp, Subs -> Querying product details from console"),
+    CONSOLE_QUERY_PRODUCTS_INAPP_FETCHING("InApp -> Querying product details from console"),
+    CONSOLE_QUERY_PRODUCTS_SUB_FETCHING("Subs -> Querying product details from console"),
     CONSOLE_QUERY_PRODUCTS_COMPLETED("InApp, Subs -> Fetched product details from console"),
 
     // Buying
     CONSOLE_BUY_PRODUCT_EMPTY_ID("InApp, Subs -> Product Id can't be empty"),
     CONSOLE_PRODUCTS_IN_APP_NOT_EXIST("InApp -> No product has been found"),
     CONSOLE_PRODUCTS_SUB_NOT_EXIST("SUB -> No product has been found"),
+
+    // Update
+    CONSOLE_PRODUCTS_OLD_SUB_NOT_FOUND("SUB -> Old product not being able to found"),
 
     // Billing Flows
     LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY("Google Play Billing has been launched successfully"),

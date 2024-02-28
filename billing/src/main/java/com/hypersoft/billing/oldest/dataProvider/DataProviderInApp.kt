@@ -67,6 +67,6 @@ internal class DataProviderInApp {
     /* ---------------------------------------------------- Purchase Details ---------------------------------------------------- */
 
     fun getPurchaseDetail(simpleDateFormat: SimpleDateFormat, purchase: Purchase): PurchaseDetail {
-        return PurchaseDetail(productType = ProductType.INAPP, purchaseType = "Lifetime", purchaseTime = simpleDateFormat.format(Date(purchase.purchaseTime)))
+        return PurchaseDetail(productType = ProductType.inapp, purchaseType = "Lifetime", purchaseTime = simpleDateFormat.format(Date(purchase.purchaseTime)))
     }
 }

@@ -61,6 +61,6 @@ internal class DataProviderSub {
             SubscriptionProductIds.basicProductYearly -> "Yearly"
             else -> "-"
         }
-        return PurchaseDetail(productType = ProductType.SUBS, purchaseType = purchaseType, purchaseTime = simpleDateFormat.format(Date(purchase.purchaseTime)))
+        return PurchaseDetail(productType = ProductType.subs, purchaseType = purchaseType, purchaseTime = simpleDateFormat.format(Date(purchase.purchaseTime)))
     }
 }

@@ -76,6 +76,12 @@ internal open class BillingRepository(context: Context) {
     private val purchases: List<Purchase> get() = _purchases.toList()
 
     /**
+     * @property _purchaseDetailList: List of all purchases with detail that this user has ever made and currently owns.
+     */
+    private val _purchaseDetailList = arrayListOf<PurchaseDetail>()
+    private val purchaseDetailList: List<PurchaseDetail> get() = _purchaseDetailList.toList()
+
+    /**
      * @property _storeProductDetailsList: List of product details from server
      */
     private val _storeProductDetailsList: ArrayList<QueryProductDetail> = arrayListOf()
@@ -102,8 +108,9 @@ internal open class BillingRepository(context: Context) {
 
     /**
      *  Get a single testing product_id ("android.test.purchased")
+     *  Get a single testing product_id ("android.test.item_unavailable")
      */
-    protected fun getDebugProductIDList() = "android.test.item_unavailable"
+    protected fun getDebugProductIDList() = "android.test.purchased"
 
     /* ---------------------------------------------------------------------------------------------------- */
     /* ---------------------------------------- Billing Connection ---------------------------------------- */
@@ -211,6 +218,7 @@ internal open class BillingRepository(context: Context) {
         billingClient
             .queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(productType).build())
             { billingResult, purchases ->
+                Log.i(TAG, "BillingRepository: $productType -> Purchases: $purchases")
                 if (BillingResponse(billingResult.responseCode).isOk) {
                     _purchases.addAll(purchases)
                     when (productType) {
@@ -233,7 +241,7 @@ internal open class BillingRepository(context: Context) {
     }
 
     /**
-     * Scenarios where a purchase might have 0 products:
+     * Calls once, Scenarios where a purchase might have 0 products:
      *  ->  Refunded purchase
      *  ->  Subscription Cancel
      *  ->  Promo code (discount to zero purchasing cost)
@@ -252,13 +260,16 @@ internal open class BillingRepository(context: Context) {
 
             completePurchaseList.forEach { completePurchase ->
                 completePurchase.productDetailList.forEach { productDetails ->
-                    val productType = if (productDetails.productType == ProductType.INAPP.toString()) ProductType.INAPP else ProductType.SUBS
+                    val productType = if (productDetails.productType == BillingClient.ProductType.INAPP) ProductType.inapp else ProductType.subs
                     val planId = queryUtils.getPlanId(productDetails.subscriptionOfferDetails)
+                    val planTitle = productDetails.subscriptionOfferDetails?.get(0)?.let { queryUtils.getPlanTitle(it) } ?: ""
 
                     val purchaseDetail = PurchaseDetail(
                         productId = productDetails.productId,
                         planId = planId,
                         productTitle = productDetails.title,
+                        planTitle = planTitle,
+                        purchaseToken = completePurchase.purchase.purchaseToken,
                         productType = productType,
                         purchaseTime = completePurchase.purchase.purchaseTime.toFormattedDate(),
                         purchaseTimeMillis = completePurchase.purchase.purchaseTime,
@@ -272,6 +283,9 @@ internal open class BillingRepository(context: Context) {
 
             queryUtils.checkForAcknowledgements(purchases)
 
+            _purchaseDetailList.clear()
+            _purchaseDetailList.addAll(resultList)
+
             withContext(Dispatchers.Main) {
                 _purchasesSharedFlow.emit(resultList)
             }
@@ -284,61 +298,104 @@ internal open class BillingRepository(context: Context) {
 
     protected fun fetchStoreProducts() {
         CoroutineScope(Dispatchers.IO + job).launch {
-            Result.setResultState(ResultState.CONSOLE_QUERY_PRODUCTS_FETCHING)
+            _storeProductDetailsList.clear()
 
-            val productDetailList = arrayListOf<ProductDetail>()
-            val queryProductDetail = arrayListOf<QueryProductDetail>()
+            // Determine product types to be fetched
+            val hasInApp = userQueryList.any { it.first == BillingClient.ProductType.INAPP }
+            val hasSubs = userQueryList.any { it.first == BillingClient.ProductType.SUBS }
+            val hasBoth = userQueryList.any { it.first == BillingClient.ProductType.INAPP } &&
+                    userQueryList.any { it.first == BillingClient.ProductType.SUBS }
 
-            val productParams = queryUtils.getProductParams(userQueryList)
-            val productDetailsList = queryUtils.queryProductDetailsAsync(productParams)
+            // Query for product types to be fetched
+            when {
+                hasBoth -> queryStoreProducts(BillingClient.ProductType.INAPP, true)
+                hasInApp -> queryStoreProducts(BillingClient.ProductType.INAPP, false)
+                hasSubs -> queryStoreProducts(BillingClient.ProductType.SUBS, false)
+                else -> processStoreProducts(emptyList(), isCompleted = true)
+            }
+        }
+    }
 
-            productDetailsList.forEach { productDetails ->
-                when (productDetails.productType) {
-                    ProductType.INAPP.toString() -> {
-                        val productDetail = ProductDetail(
-                            productId = productDetails.productId,
-                            planId = "",
-                            productTitle = productDetails.title,
-                            planTitle = "",
-                            productType = ProductType.INAPP,
-                            currencyCode = productDetails.oneTimePurchaseOfferDetails?.priceCurrencyCode.toString(),
-                            price = productDetails.oneTimePurchaseOfferDetails?.formattedPrice.toString().removeSuffix(".00"),
-                            priceAmountMicros = productDetails.oneTimePurchaseOfferDetails?.priceAmountMicros ?: 0L,
-                            billingPeriod = ""
-                        )
-                        productDetailList.add(productDetail)
-                        queryProductDetail.add(QueryProductDetail(productDetail, productDetails))
-                    }
+    private suspend fun queryStoreProducts(productType: String, hasBoth: Boolean) {
+        when (productType) {
+            BillingClient.ProductType.INAPP -> Result.setResultState(ResultState.CONSOLE_QUERY_PRODUCTS_INAPP_FETCHING)
+            BillingClient.ProductType.SUBS -> Result.setResultState(ResultState.CONSOLE_QUERY_PRODUCTS_SUB_FETCHING)
+        }
+        val productIdList = userQueryList.filter { it.first == productType }
 
-                    ProductType.SUBS.toString() -> {
-                        productDetails.subscriptionOfferDetails?.let { offersList ->
-                            offersList.forEach { offer ->       // Weekly, Monthly, etc
-                                val planTitle = queryUtils.getPlanTitle(offer)
-                                val pricingPhase = queryUtils.getPricingOffer(offer)
-                                pricingPhase?.let {
-                                    val productDetail = ProductDetail(
-                                        productId = productDetails.productId,
-                                        planId = offer.basePlanId,
-                                        productTitle = productDetails.title,
-                                        planTitle = planTitle,
-                                        productType = ProductType.SUBS,
-                                        currencyCode = pricingPhase.priceCurrencyCode,
-                                        price = pricingPhase.formattedPrice,
-                                        priceAmountMicros = pricingPhase.priceAmountMicros,
-                                        billingPeriod = pricingPhase.billingPeriod,
-                                    )
-                                    productDetailList.add(productDetail)
-                                    queryProductDetail.add(QueryProductDetail(productDetail, productDetails))
+        val productParams = queryUtils.getProductParams(productIdList)
+        val productDetailsList = queryUtils.queryProductDetailsAsync(productParams)
+        Log.i(TAG, "BillingRepository: $productType -> Query: $productDetailsList")
+
+        processStoreProducts(productDetailsList, hasBoth.not())
+
+        if (productType == BillingClient.ProductType.INAPP && hasBoth) {
+            queryStoreProducts(BillingClient.ProductType.SUBS, false)
+        }
+    }
+
+    private fun processStoreProducts(productDetailsList: List<ProductDetails>, isCompleted: Boolean) {
+        val productDetailList = arrayListOf<ProductDetail>()
+        val queryProductDetail = arrayListOf<QueryProductDetail>()
+
+        productDetailsList.forEach { productDetails ->
+            when (productDetails.productType) {
+                BillingClient.ProductType.INAPP -> {
+                    val productDetail = ProductDetail(
+                        productId = productDetails.productId,
+                        planId = "",
+                        productTitle = productDetails.title,
+                        planTitle = "",
+                        productType = ProductType.inapp,
+                        currencyCode = productDetails.oneTimePurchaseOfferDetails?.priceCurrencyCode.toString(),
+                        price = productDetails.oneTimePurchaseOfferDetails?.formattedPrice.toString().removeSuffix(".00"),
+                        priceAmountMicros = productDetails.oneTimePurchaseOfferDetails?.priceAmountMicros ?: 0L,
+                        billingPeriod = ""
+                    )
+                    productDetailList.add(productDetail)
+                    queryProductDetail.add(QueryProductDetail(productDetail, productDetails))
+                }
+
+                BillingClient.ProductType.SUBS -> {
+                    productDetails.subscriptionOfferDetails?.let { offersList ->
+                        offersList.forEach tag@{ offer ->       // Weekly, Monthly, etc // Free-Regular  // Regular
+
+                            val isExist = productDetailList.any { it.productId == productDetails.productId && it.planId == offer.basePlanId }
+                            if (isExist) {
+                                return@tag
+                            }
+
+                            val productDetail = ProductDetail().apply {
+                                productId = productDetails.productId
+                                planId = offer.basePlanId
+                                productTitle = productDetails.title
+                                productType = ProductType.subs
+                            }
+
+                            offer.pricingPhases.pricingPhaseList.forEach { pricingPhase ->
+                                if (pricingPhase.formattedPrice.equals("Free", ignoreCase = true)) {
+                                    productDetail.freeTrialDays = queryUtils.getTrialDay(offer)
+                                } else {
+                                    productDetail.planTitle = queryUtils.getPlanTitle(pricingPhase.billingPeriod)
+                                    productDetail.currencyCode = pricingPhase.priceCurrencyCode
+                                    productDetail.price = pricingPhase.formattedPrice
+                                    productDetail.priceAmountMicros = pricingPhase.priceAmountMicros
+                                    productDetail.billingPeriod = pricingPhase.billingPeriod
                                 }
                             }
+
+                            productDetailList.add(productDetail)
+                            queryProductDetail.add(QueryProductDetail(productDetail, productDetails))
                         }
                     }
                 }
             }
-            Result.setResultState(ResultState.CONSOLE_QUERY_PRODUCTS_COMPLETED)
+        }
 
-            _storeProductDetailsList.clear()
-            _storeProductDetailsList.addAll(queryProductDetail)
+        _storeProductDetailsList.addAll(queryProductDetail)
+
+        if (isCompleted) {
+            Result.setResultState(ResultState.CONSOLE_QUERY_PRODUCTS_COMPLETED)
             _productDetailsLiveData.postValue(productDetailList)
         }
     }
@@ -357,12 +414,12 @@ internal open class BillingRepository(context: Context) {
             return
         }
 
-        val productDetail = storeProductDetailsList.find {
+        val queryProductDetail = storeProductDetailsList.find {
             it.productDetail.productId == productId
-                    && it.productDetail.productType == ProductType.INAPP
+                    && it.productDetail.productType == ProductType.inapp
         }
-        productDetail?.let {
-            launchFlow(activity = activity!!, it.productDetails)
+        queryProductDetail?.let {
+            launchFlow(activity = activity!!, it.productDetails, offerToken = null)
         } ?: run {
             Result.setResultState(ResultState.CONSOLE_PRODUCTS_IN_APP_NOT_EXIST)
             onPurchaseListener.onPurchaseResult(false, message = ResultState.CONSOLE_PRODUCTS_IN_APP_NOT_EXIST.message)
@@ -382,22 +439,83 @@ internal open class BillingRepository(context: Context) {
         val productDetail = storeProductDetailsList.find {
             it.productDetail.productId == productId
                     && it.productDetail.planId == planId
-                    && it.productDetail.productType == ProductType.SUBS
+                    && it.productDetail.productType == ProductType.subs
         }
         productDetail?.let {
-            launchFlow(activity = activity!!, it.productDetails)
+            val offerToken = queryUtils.getOfferToken(it.productDetails.subscriptionOfferDetails, planId)
+            launchFlow(activity = activity!!, it.productDetails, offerToken = offerToken)
         } ?: run {
             Result.setResultState(ResultState.CONSOLE_PRODUCTS_SUB_NOT_EXIST)
             onPurchaseListener.onPurchaseResult(false, message = ResultState.CONSOLE_PRODUCTS_SUB_NOT_EXIST.message)
         }
     }
 
-    private fun launchFlow(activity: Activity, productDetails: ProductDetails) {
+    private fun launchFlow(activity: Activity, productDetails: ProductDetails, offerToken: String?) {
         Log.i(TAG, "launchFlow: Product Details about to be purchase: $productDetails")
-        val paramsList = listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(productDetails).build())
+        val paramsList = when (offerToken == null) {
+            true -> listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(productDetails).build())
+            false -> listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(productDetails).setOfferToken(offerToken).build())
+        }
         val flowParams = BillingFlowParams.newBuilder().setProductDetailsParamsList(paramsList).build()
         billingClient.launchBillingFlow(activity, flowParams)
         Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)
+    }
+
+    /**
+     * Upgrade or downgrade subscription plan
+     */
+
+    protected fun updateSubs(
+        activity: Activity?,
+        oldProductId: String,
+        oldPlanId: String,
+        productId: String,
+        planId: String,
+        onPurchaseListener: OnPurchaseListener
+    ) {
+        this.onPurchaseListener = onPurchaseListener
+
+        val errorMessage = validationUtils.checkForSubs(activity, productId)
+        val oldPurchase= purchaseDetailList.find { it.productId == oldProductId && it.planId == oldPlanId }
+
+        if (errorMessage != null) {
+            onPurchaseListener.onPurchaseResult(false, message = errorMessage)
+            return
+        }
+
+        if (oldPurchase == null) {
+            Result.setResultState(ResultState.CONSOLE_PRODUCTS_OLD_SUB_NOT_FOUND)
+            onPurchaseListener.onPurchaseResult(false, message = ResultState.CONSOLE_PRODUCTS_OLD_SUB_NOT_FOUND.message)
+            return
+        }
+
+        val productDetail = storeProductDetailsList.find {
+            it.productDetail.productId == productId
+                    && it.productDetail.planId == planId
+                    && it.productDetail.productType == ProductType.subs
+        }
+
+        productDetail?.let {
+            val offerToken = queryUtils.getOfferToken(it.productDetails.subscriptionOfferDetails, planId)
+            val paramsList = listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(it.productDetails).setOfferToken(offerToken).build())
+
+            val updateParams = BillingFlowParams.SubscriptionUpdateParams.newBuilder()
+                .setOldPurchaseToken(oldPurchase.purchaseToken)
+                .setSubscriptionReplacementMode(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_FULL_PRICE)
+                .build()
+
+            val flowParams =
+                BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(paramsList)
+                    .setSubscriptionUpdateParams(updateParams)
+                    .build()
+
+            billingClient.launchBillingFlow(activity!!, flowParams)
+            Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)
+        } ?: run {
+            Result.setResultState(ResultState.CONSOLE_PRODUCTS_SUB_NOT_EXIST)
+            onPurchaseListener.onPurchaseResult(false, message = ResultState.CONSOLE_PRODUCTS_SUB_NOT_EXIST.message)
+        }
     }
 
     private val purchasesListener = PurchasesUpdatedListener { billingResult, purchasesList ->
@@ -488,6 +606,5 @@ value class BillingResponse(private val code: Int) {
             BillingClient.BillingResponseCode.ITEM_UNAVAILABLE,
             BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
             BillingClient.BillingResponseCode.ITEM_NOT_OWNED,
-            BillingClient.BillingResponseCode.USER_CANCELED,
         )
 }

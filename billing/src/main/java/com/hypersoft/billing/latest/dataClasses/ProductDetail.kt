@@ -19,7 +19,7 @@ import com.hypersoft.billing.common.dataClasses.ProductType
  * @property currencyCode: e.g. USD, PKR, etc
  * @property price: e.g. Rs 750.00
  * @property priceAmountMicros: e.g. 750000000
- * @property trialDays: e.g. 3, 5, 7, etc
+ * @property freeTrialDays: e.g. 3, 5, 7, etc
  * @property billingPeriod
  * - Weekly: P1W (One week)
  * - Every 4 weeks: P4W (Four weeks)
@@ -37,10 +37,11 @@ data class ProductDetail(
     var planId: String,
     var productTitle: String,
     var planTitle: String,
-    val productType: ProductType,
+    var productType: ProductType,
     var currencyCode: String,
     var price: String,
     var priceAmountMicros: Long = 0,
+    var freeTrialDays: Int = 0,
     var billingPeriod: String,
 ) {
     constructor() : this(
@@ -48,10 +49,11 @@ data class ProductDetail(
         planId = "",
         productTitle = "",
         planTitle = "",
-        productType = ProductType.SUBS,
+        productType = ProductType.subs,
         currencyCode = "",
         price = "",
         priceAmountMicros = 0,
+        freeTrialDays = 0,
         billingPeriod = "",
     )
 }

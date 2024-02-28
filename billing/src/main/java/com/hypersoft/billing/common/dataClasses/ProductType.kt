@@ -9,6 +9,6 @@ package com.hypersoft.billing.common.dataClasses
  */
 
 enum class ProductType {
-    INAPP,
-    SUBS
+    inapp,
+    subs
 }

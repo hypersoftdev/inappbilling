@@ -12,5 +12,5 @@ import com.hypersoft.billing.latest.dataClasses.PurchaseDetail
 
 interface BillingListener {
     fun onConnectionResult(isSuccess: Boolean, message: String)
-    fun purchasesResult(isSuccess: List<PurchaseDetail>)
+    fun purchasesResult(purchaseDetailList: List<PurchaseDetail>)
 }

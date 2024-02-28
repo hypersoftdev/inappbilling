@@ -91,7 +91,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        override fun purchasesResult(isSuccess: List<PurchaseDetail>) {
+        override fun purchasesResult(purchaseDetailList: List<PurchaseDetail>) {
             proceedApp()
         }
     }

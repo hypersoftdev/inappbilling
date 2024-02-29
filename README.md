@@ -60,10 +60,10 @@ billingManager.initialize(
             if (!isSuccess) {
                 proceedApp()
             }
-    
+        }
         override fun purchasesResult(purchaseDetailList: List<PurchaseDetail>) {
             if (purchaseDetailList.isEmpty()) {
-                // No purchase found, reset all sharedPreferences (premium properies)
+                // No purchase found, reset all sharedPreferences (premium properties)
             }
             purchaseDetailList.forEachIndexed { index, purchaseDetail ->
                 Log.d(TAG, "Billing: initBilling: purchasesResult: $index) $purchaseDetail ")
@@ -77,15 +77,17 @@ billingManager.initialize(
 Access comprehensive details of the currently purchased item using the `PurchaseDetail` class.
 
 ```
-@param productId: Product Id for both inapp/subs (e.g. product_ads/product_weekly_ads)
-@param planId: Plan Id for subs (e.g. plan_weekly_ads)
-@param productTitle: Title of the Product
-@param planTitle: Title of the Plan
-@param productType: Product purchase type (e.g. InApp/Subs)
-@param purchaseToken: a unique token for this purchase
-@param purchaseTime: For subscriptions, this is the subscription signup time. It won't change after renewal.
-@param purchaseTimeMillis: UnixTimeStamp (starts from Jan 1, 1970)
-@param isAutoRenewing: Only in case of 'BillingClient.ProductType.SUBS'
+/**
+productId: Product Id for both inapp/subs (e.g. product_ads/product_weekly_ads)
+planId: Plan Id for subs (e.g. plan_weekly_ads)
+productTitle: Title of the Product
+planTitle: Title of the Plan
+productType: Product purchase type (e.g. InApp/Subs)
+purchaseToken: a unique token for this purchase
+purchaseTime: For subscriptions, this is the subscription signup time. It won't change after renewal.
+purchaseTimeMillis: UnixTimeStamp (starts from Jan 1, 1970)
+isAutoRenewing: Only in case of 'BillingClient.ProductType.SUBS'
+**/
 
 data class PurchaseDetail(
     val productId: String,

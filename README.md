@@ -42,12 +42,12 @@ private val billingManager by lazy { BillingManager(context) }
 
 ### Step # 2 (Billing Connection)
 
-Retrieve a debugging ID for testing purposes by utilizing the `debugProductId` method. Ensure that the parameter `purchaseDetailList` represents a list containing all active purchases along with their respective details.
+Retrieve a debugging ID for testing purposes by utilizing the `getDebugProductIDList()` method. Ensure that the parameter `purchaseDetailList` represents a list containing all active purchases along with their respective details.
 
 ```
 val subsProductIdList = listOf("subs_product_id_1", "subs_product_id_2", "subs_product_id_3")
 val inAppProductIdList = when (BuildConfig.DEBUG) {
-    true -> listOf(billingManager.debugProductId)
+    true -> listOf(billingManager.getDebugProductIDList())
     false -> listOf("inapp_product_id_1", "inapp_product_id_2")
 }
 
@@ -108,7 +108,7 @@ This observer monitors all active in-app and subscription products.
 val subsProductIdList = listOf("subs_product_id_1", "subs_product_id_2", "subs_product_id_3")
 val subsPlanIdList = listOf("subs_plan_id_1", "subs_plan_id_2", "subs_plan_id_3")
 
-billingManager.observeQueryProducts().observe(viewLifecycleOwner) { productDetailList ->
+billingManager.productDetailsLiveData.observe(viewLifecycleOwner) { productDetailList ->
     Log.d(TAG, "Billing: initObservers: $productDetailList")
 
     productDetailList.forEach { productDetail ->

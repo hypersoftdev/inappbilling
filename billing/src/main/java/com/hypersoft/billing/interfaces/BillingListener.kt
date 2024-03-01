@@ -1,6 +1,6 @@
-package com.hypersoft.billing.latest.interfaces
+package com.hypersoft.billing.interfaces
 
-import com.hypersoft.billing.latest.dataClasses.PurchaseDetail
+import com.hypersoft.billing.dataClasses.PurchaseDetail
 
 /**
  * @Author: SOHAIB AHMED

@@ -1,9 +1,8 @@
-package com.hypersoft.billing.latest.repository
+package com.hypersoft.billing.repository
 
 import android.app.Activity
 import android.content.Context
 import android.util.Log
-import androidx.core.os.BundleCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.android.billingclient.api.BillingClient
@@ -14,18 +13,17 @@ import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryPurchasesParams
-import com.hypersoft.billing.common.dataClasses.ProductType
-import com.hypersoft.billing.latest.dataClasses.CompletePurchase
-import com.hypersoft.billing.latest.dataClasses.ProductDetail
-import com.hypersoft.billing.latest.dataClasses.PurchaseDetail
-import com.hypersoft.billing.latest.dataClasses.QueryProductDetail
-import com.hypersoft.billing.latest.enums.ResultState
-import com.hypersoft.billing.latest.extensions.toFormattedDate
-import com.hypersoft.billing.latest.utils.Result
-import com.hypersoft.billing.oldest.helper.BillingHelper.Companion.TAG
-import com.hypersoft.billing.common.interfaces.OnPurchaseListener
-import com.hypersoft.billing.latest.utils.QueryUtils
-import com.hypersoft.billing.latest.utils.ValidationUtils
+import com.hypersoft.billing.BillingManager.Companion.TAG
+import com.hypersoft.billing.dataClasses.CompletePurchase
+import com.hypersoft.billing.dataClasses.ProductDetail
+import com.hypersoft.billing.dataClasses.ProductType
+import com.hypersoft.billing.dataClasses.PurchaseDetail
+import com.hypersoft.billing.dataClasses.QueryProductDetail
+import com.hypersoft.billing.enums.ResultState
+import com.hypersoft.billing.extensions.toFormattedDate
+import com.hypersoft.billing.interfaces.OnPurchaseListener
+import com.hypersoft.billing.utils.QueryUtils
+import com.hypersoft.billing.utils.Result
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -33,7 +31,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
 
 /**
  * @Author: SOHAIB AHMED
@@ -43,7 +40,7 @@ import kotlinx.coroutines.withContext
  *      -> https://stackoverflow.com/users/20440272/sohaib-ahmed
  */
 
-internal open class BillingRepository(context: Context) {
+open class BillingRepository(context: Context) {
 
     private val billingClient by lazy {
         BillingClient.newBuilder(context)
@@ -53,7 +50,7 @@ internal open class BillingRepository(context: Context) {
     }
 
     private val queryUtils: QueryUtils by lazy { QueryUtils(billingClient) }
-    private val validationUtils: ValidationUtils by lazy { ValidationUtils(billingClient) }
+    private val validationUtils: com.hypersoft.billing.utils.ValidationUtils by lazy { com.hypersoft.billing.utils.ValidationUtils(billingClient) }
 
     /**
      * @property _purchasesSharedFlow: Collect (observe) this, to get user's purchase list currently owns
@@ -126,7 +123,7 @@ internal open class BillingRepository(context: Context) {
      *  Get a single testing product_id ("android.test.purchased")
      *  Get a single testing product_id ("android.test.item_unavailable")
      */
-    protected fun getDebugProductIDList() = "android.test.purchased"
+    fun getDebugProductIDList() = "android.test.purchased"
 
     /* ---------------------------------------------------------------------------------------------------- */
     /* ---------------------------------------- Billing Connection ---------------------------------------- */
@@ -368,7 +365,7 @@ internal open class BillingRepository(context: Context) {
                         billingPeriod = ""
                     )
                     productDetailList.add(productDetail)
-                    queryProductDetail.add(QueryProductDetail(productDetail, productDetails))
+                    queryProductDetail.add(QueryProductDetail(productDetail, productDetails, null))
                 }
 
                 BillingClient.ProductType.SUBS -> {
@@ -400,7 +397,7 @@ internal open class BillingRepository(context: Context) {
                             }
 
                             productDetailList.add(productDetail)
-                            queryProductDetail.add(QueryProductDetail(productDetail, productDetails))
+                            queryProductDetail.add(QueryProductDetail(productDetail, productDetails, offer))
                         }
                     }
                 }
@@ -451,18 +448,18 @@ internal open class BillingRepository(context: Context) {
             return
         }
 
-        val productDetail = storeProductDetailsList.find {
+        val queryProductDetail = storeProductDetailsList.find {
             it.productDetail.productId == productId
                     && it.productDetail.planId == planId
                     && it.productDetail.productType == ProductType.subs
         }
-        productDetail?.let {
-            val offerToken = queryUtils.getOfferToken(it.productDetails.subscriptionOfferDetails, planId)
-            launchFlow(activity = activity!!, it.productDetails, offerToken = offerToken)
-        } ?: run {
+        if (queryProductDetail?.offerDetails == null) {
             Result.setResultState(ResultState.CONSOLE_PRODUCTS_SUB_NOT_EXIST)
             onPurchaseListener.onPurchaseResult(false, message = ResultState.CONSOLE_PRODUCTS_SUB_NOT_EXIST.message)
+            return
         }
+
+        launchFlow(activity = activity!!, queryProductDetail.productDetails, offerToken = queryProductDetail.offerDetails.offerToken)
     }
 
     private fun launchFlow(activity: Activity, productDetails: ProductDetails, offerToken: String?) {
@@ -491,7 +488,7 @@ internal open class BillingRepository(context: Context) {
         this.onPurchaseListener = onPurchaseListener
 
         val errorMessage = validationUtils.checkForSubs(activity, productId)
-        val oldPurchase= purchaseDetailList.find { it.productId == oldProductId && it.planId == oldPlanId }
+        val oldPurchase = purchaseDetailList.find { it.productId == oldProductId && it.planId == oldPlanId }
 
         if (errorMessage != null) {
             onPurchaseListener.onPurchaseResult(false, message = errorMessage)
@@ -504,33 +501,38 @@ internal open class BillingRepository(context: Context) {
             return
         }
 
-        val productDetail = storeProductDetailsList.find {
+        val queryProductDetail = storeProductDetailsList.find {
             it.productDetail.productId == productId
                     && it.productDetail.planId == planId
                     && it.productDetail.productType == ProductType.subs
         }
 
-        productDetail?.let {
-            val offerToken = queryUtils.getOfferToken(it.productDetails.subscriptionOfferDetails, planId)
-            val paramsList = listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(it.productDetails).setOfferToken(offerToken).build())
-
-            val updateParams = BillingFlowParams.SubscriptionUpdateParams.newBuilder()
-                .setOldPurchaseToken(oldPurchase.purchaseToken)
-                .setSubscriptionReplacementMode(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_FULL_PRICE)
-                .build()
-
-            val flowParams =
-                BillingFlowParams.newBuilder()
-                    .setProductDetailsParamsList(paramsList)
-                    .setSubscriptionUpdateParams(updateParams)
-                    .build()
-
-            billingClient.launchBillingFlow(activity!!, flowParams)
-            Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)
-        } ?: run {
+        if (queryProductDetail?.offerDetails == null) {
             Result.setResultState(ResultState.CONSOLE_PRODUCTS_SUB_NOT_EXIST)
             onPurchaseListener.onPurchaseResult(false, message = ResultState.CONSOLE_PRODUCTS_SUB_NOT_EXIST.message)
+            return
         }
+
+        val paramsList = listOf(
+            BillingFlowParams.ProductDetailsParams.newBuilder()
+                .setProductDetails(queryProductDetail.productDetails)
+                .setOfferToken(queryProductDetail.offerDetails.offerToken)
+                .build()
+        )
+
+        val updateParams = BillingFlowParams.SubscriptionUpdateParams.newBuilder()
+            .setOldPurchaseToken(oldPurchase.purchaseToken)
+            .setSubscriptionReplacementMode(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_FULL_PRICE)
+            .build()
+
+        val flowParams =
+            BillingFlowParams.newBuilder()
+                .setProductDetailsParamsList(paramsList)
+                .setSubscriptionUpdateParams(updateParams)
+                .build()
+
+        billingClient.launchBillingFlow(activity!!, flowParams)
+        Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)
     }
 
     private val purchasesListener = PurchasesUpdatedListener { billingResult, purchasesList ->

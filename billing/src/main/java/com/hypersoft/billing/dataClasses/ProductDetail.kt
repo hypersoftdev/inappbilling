@@ -1,6 +1,4 @@
-package com.hypersoft.billing.latest.dataClasses
-
-import com.hypersoft.billing.common.dataClasses.ProductType
+package com.hypersoft.billing.dataClasses
 
 /**
  * @Author: SOHAIB AHMED

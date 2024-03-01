@@ -1,4 +1,4 @@
-package com.hypersoft.billing.latest.dataClasses
+package com.hypersoft.billing.dataClasses
 
 import com.android.billingclient.api.ProductDetails
 
@@ -12,5 +12,6 @@ import com.android.billingclient.api.ProductDetails
 
 internal data class QueryProductDetail(
     val productDetail: ProductDetail,
-    val productDetails: ProductDetails
+    val productDetails: ProductDetails,
+    val offerDetails: ProductDetails.SubscriptionOfferDetails?
 )

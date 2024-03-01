@@ -1,4 +1,4 @@
-package com.hypersoft.billing.common.dataClasses
+package com.hypersoft.billing.dataClasses
 
 /**
  * @Author: SOHAIB AHMED

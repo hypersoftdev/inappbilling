@@ -1,4 +1,4 @@
-package com.hypersoft.billing.latest.dataClasses
+package com.hypersoft.billing.dataClasses
 
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
@@ -17,7 +17,7 @@ import com.android.billingclient.api.Purchase
  *      product detail as per purchase.
  */
 
-internal data class CompletePurchase(
+data class CompletePurchase(
     val purchase: Purchase,
     val productDetailList: List<ProductDetails>
 )

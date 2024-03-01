@@ -1,10 +1,10 @@
-package com.hypersoft.billing.latest
+package com.hypersoft.billing.controller
 
 import android.app.Activity
 import android.content.Context
-import com.hypersoft.billing.latest.interfaces.BillingListener
-import com.hypersoft.billing.latest.repository.BillingRepository
-import com.hypersoft.billing.common.interfaces.OnPurchaseListener
+import com.hypersoft.billing.interfaces.BillingListener
+import com.hypersoft.billing.interfaces.OnPurchaseListener
+import com.hypersoft.billing.repository.BillingRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -18,14 +18,11 @@ import kotlinx.coroutines.launch
  *      -> https://stackoverflow.com/users/20440272/sohaib-ahmed
  */
 
-internal class BillingController(context: Context) : BillingRepository(context) {
+open class BillingController(context: Context) : BillingRepository(context) {
 
     private var billingListener: BillingListener? = null
 
     private var job: Job? = null
-
-    val debugProductId =  getDebugProductIDList()
-    val productsObserver get() =   productDetailsLiveData
 
     fun startBillingConnection(
         userInAppPurchases: List<String>,
@@ -37,12 +34,12 @@ internal class BillingController(context: Context) : BillingRepository(context) 
         startConnection { isSuccess, message ->
             billingListener?.onConnectionResult(isSuccess, message)
             if (isSuccess) {
-                fetchPurchases(userInAppPurchases, userSubsPurchases)
+                fetchData(userInAppPurchases, userSubsPurchases)
             }
         }
     }
 
-    private fun fetchPurchases(userInAppPurchases: List<String>, userSubsPurchases: List<String>) {
+    private fun fetchData(userInAppPurchases: List<String>, userSubsPurchases: List<String>) {
         setUserQueries(userInAppPurchases, userSubsPurchases)
         fetchPurchases()
         fetchStoreProducts()

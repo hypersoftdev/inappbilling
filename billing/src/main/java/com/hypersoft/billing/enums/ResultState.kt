@@ -1,4 +1,4 @@
-package com.hypersoft.billing.latest.enums
+package com.hypersoft.billing.enums
 
 /**
  * @Author: SOHAIB AHMED

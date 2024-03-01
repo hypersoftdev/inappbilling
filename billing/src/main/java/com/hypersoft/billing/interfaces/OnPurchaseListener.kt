@@ -1,4 +1,4 @@
-package com.hypersoft.billing.common.interfaces
+package com.hypersoft.billing.interfaces
 
 /**
  * @Author: SOHAIB AHMED

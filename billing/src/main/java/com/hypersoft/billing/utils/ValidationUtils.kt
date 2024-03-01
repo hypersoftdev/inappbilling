@@ -1,8 +1,8 @@
-package com.hypersoft.billing.latest.utils
+package com.hypersoft.billing.utils
 
 import android.app.Activity
 import com.android.billingclient.api.BillingClient
-import com.hypersoft.billing.latest.enums.ResultState
+import com.hypersoft.billing.enums.ResultState
 
 /**
  * @Author: SOHAIB AHMED
@@ -12,9 +12,9 @@ import com.hypersoft.billing.latest.enums.ResultState
  *      -> https://stackoverflow.com/users/20440272/sohaib-ahmed
  */
 
-class ValidationUtils(private val billingClient: BillingClient) {
+internal class ValidationUtils(private val billingClient: BillingClient) {
 
-    fun checkForInApp(activity: Activity?, productId: String) : String?{
+    fun checkForInApp(activity: Activity?, productId: String): String? {
         if (activity == null) {
             Result.setResultState(ResultState.ACTIVITY_REFERENCE_NOT_FOUND)
             return ResultState.ACTIVITY_REFERENCE_NOT_FOUND.message
@@ -33,7 +33,7 @@ class ValidationUtils(private val billingClient: BillingClient) {
         return null
     }
 
-    fun checkForSubs(activity: Activity?, productId: String) : String?{
+    fun checkForSubs(activity: Activity?, productId: String): String? {
         if (activity == null) {
             Result.setResultState(ResultState.ACTIVITY_REFERENCE_NOT_FOUND)
             return ResultState.ACTIVITY_REFERENCE_NOT_FOUND.message

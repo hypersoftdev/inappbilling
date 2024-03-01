@@ -1,4 +1,4 @@
-package com.hypersoft.billing.latest.dataClasses
+package com.hypersoft.billing.dataClasses
 
 import com.android.billingclient.api.ProductDetails.PricingPhase
 
@@ -10,7 +10,7 @@ import com.android.billingclient.api.ProductDetails.PricingPhase
  *      -> https://stackoverflow.com/users/20440272/sohaib-ahmed
  */
 
-data class BestPlan(
+internal data class BestPlan(
     val trialDays: Int,
     val pricingPhase: PricingPhase?
 )

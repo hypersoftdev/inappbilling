@@ -1,4 +1,4 @@
-package com.hypersoft.billing.latest.extensions
+package com.hypersoft.billing.extensions
 
 import java.text.SimpleDateFormat
 import java.util.Date

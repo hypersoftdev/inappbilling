@@ -1,4 +1,4 @@
-package com.hypersoft.billing.latest.utils
+package com.hypersoft.billing.utils
 
 import android.util.Log
 import com.android.billingclient.api.AcknowledgePurchaseParams
@@ -6,10 +6,10 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.QueryProductDetailsParams
-import com.hypersoft.billing.latest.dataClasses.BestPlan
-import com.hypersoft.billing.latest.enums.ResultState
-import com.hypersoft.billing.latest.repository.BillingResponse
-import com.hypersoft.billing.oldest.helper.BillingHelper.Companion.TAG
+import com.hypersoft.billing.dataClasses.BestPlan
+import com.hypersoft.billing.enums.ResultState
+import com.hypersoft.billing.repository.BillingResponse
+import com.hypersoft.billing.BillingManager.Companion.TAG
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 

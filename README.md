@@ -237,23 +237,23 @@ To add products and plans on the Play Console, consider using the following reco
 For Bronze Subscription
 
     -> Product ID:          bronze_product
-        -- Plan ID:             bronze_plan_weekly
-        -- Plan ID:             bronze_plan_monthly
-        -- Plan ID:             bronze_plan_yearly
+        -- Plan ID:             bronze-plan-weekly
+        -- Plan ID:             bronze-plan-monthly
+        -- Plan ID:             bronze-plan-yearly
 
 For Silver Subscription
 
     -> Product ID:          silver_product
-        -- Plan ID:             silver_plan_weekly
-        -- Plan ID:             silver_plan_monthly
-        -- Plan ID:             silver_plan_yearly
+        -- Plan ID:             silver-plan-weekly
+        -- Plan ID:             silver-plan-monthly
+        -- Plan ID:             silver-plan-yearly
 
 For Gold Subscription
 
     -> Product ID:          gold_product
-        -- Plan ID:             gold_plan_weekly
-        -- Plan ID:             gold_plan_monthly
-        -- Plan ID:             gold_plan_yearly
+        -- Plan ID:             gold-plan-weekly
+        -- Plan ID:             gold-plan-monthly
+        -- Plan ID:             gold-plan-yearly
 
 and so on...
 

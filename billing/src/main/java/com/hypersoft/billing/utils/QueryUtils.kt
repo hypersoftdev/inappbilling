@@ -6,12 +6,12 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.QueryProductDetailsParams
+import com.hypersoft.billing.BillingManager.Companion.TAG
 import com.hypersoft.billing.dataClasses.BestPlan
 import com.hypersoft.billing.enums.ResultState
 import com.hypersoft.billing.repository.BillingResponse
-import com.hypersoft.billing.BillingManager.Companion.TAG
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * @Author: SOHAIB AHMED
@@ -52,13 +52,15 @@ internal class QueryUtils(private val billingClient: BillingClient) {
             return emptyList()
         }
         val queryParams = QueryProductDetailsParams.newBuilder().setProductList(params).build()
-        return suspendCoroutine { continuation ->
-            billingClient.queryProductDetailsAsync(queryParams) { billingResult, productDetailsList ->
-                if (BillingResponse(billingResult.responseCode).isOk) {
-                    continuation.resume(productDetailsList)
-                } else {
-                    Log.e(TAG, "queryProductDetailsAsync: Failed to query product details. Response code: ${billingResult.responseCode}")
-                    continuation.resume(emptyList())
+        return suspendCancellableCoroutine { continuation ->
+            if (continuation.isActive) {
+                billingClient.queryProductDetailsAsync(queryParams) { billingResult, productDetailsList ->
+                    if (BillingResponse(billingResult.responseCode).isOk) {
+                        continuation.resume(productDetailsList)
+                    } else {
+                        Log.e(TAG, "queryProductDetailsAsync: Failed to query product details. Response code: ${billingResult.responseCode}")
+                        continuation.resume(emptyList())
+                    }
                 }
             }
         }

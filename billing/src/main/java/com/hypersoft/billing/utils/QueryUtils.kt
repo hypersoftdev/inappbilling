@@ -47,7 +47,7 @@ internal class QueryUtils(private val billingClient: BillingClient) {
     }
 
     suspend fun queryProductDetailsAsync(params: List<QueryProductDetailsParams.Product>): List<ProductDetails> {
-        if (billingClient.isReady.not()) {
+        if (billingClient.isReady.not() || params.isEmpty()) {
             Result.setResultState(ResultState.CONNECTION_INVALID)
             return emptyList()
         }
@@ -56,10 +56,22 @@ internal class QueryUtils(private val billingClient: BillingClient) {
             if (continuation.isActive) {
                 billingClient.queryProductDetailsAsync(queryParams) { billingResult, productDetailsList ->
                     if (BillingResponse(billingResult.responseCode).isOk) {
-                        continuation.resume(productDetailsList)
+                        if (continuation.isActive){
+                            try {
+                                continuation.resume(productDetailsList)
+                            }catch (ex:Exception){
+                                Log.e(TAG, "${ex.message}")
+                            }
+                        }
                     } else {
+                        if (continuation.isActive){
+                            try {
+                                continuation.resume(emptyList())
+                            }catch (ex:Exception){
+                                Log.e(TAG, "${ex.message}")
+                            }
+                        }
                         Log.e(TAG, "queryProductDetailsAsync: Failed to query product details. Response code: ${billingResult.responseCode}")
-                        continuation.resume(emptyList())
                     }
                 }
             }

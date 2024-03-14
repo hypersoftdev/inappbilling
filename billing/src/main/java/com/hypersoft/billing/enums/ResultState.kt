@@ -26,6 +26,9 @@ enum class ResultState(val message: String) {
     CONNECTION_FAILED("Failed to connect Google Play Console"),
 
     // Purchases
+    USER_QUERY_LIST_EMPTY("User query list is empty"),
+
+    // Purchases
     CONSOLE_PURCHASE_PRODUCTS_INAPP_FETCHING("InApp -> Fetching purchased products from google play console."),
     CONSOLE_PURCHASE_PRODUCTS_INAPP_FETCHING_FAILED("InApp -> Failed to fetch purchased products from google play console."),
     CONSOLE_PURCHASE_PRODUCTS_INAPP_FETCHING_SUCCESS("InApp -> Successfully fetched purchased products from google play console."),

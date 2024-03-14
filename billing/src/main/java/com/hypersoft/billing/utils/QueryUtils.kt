@@ -47,31 +47,25 @@ internal class QueryUtils(private val billingClient: BillingClient) {
     }
 
     suspend fun queryProductDetailsAsync(params: List<QueryProductDetailsParams.Product>): List<ProductDetails> {
-        if (billingClient.isReady.not() || params.isEmpty()) {
+        if (billingClient.isReady.not()) {
             Result.setResultState(ResultState.CONNECTION_INVALID)
+            return emptyList()
+        }
+        if (params.isEmpty()) {
+            Result.setResultState(ResultState.USER_QUERY_LIST_EMPTY)
             return emptyList()
         }
         val queryParams = QueryProductDetailsParams.newBuilder().setProductList(params).build()
         return suspendCancellableCoroutine { continuation ->
-            if (continuation.isActive) {
-                billingClient.queryProductDetailsAsync(queryParams) { billingResult, productDetailsList ->
-                    if (BillingResponse(billingResult.responseCode).isOk) {
-                        if (continuation.isActive){
-                            try {
-                                continuation.resume(productDetailsList)
-                            }catch (ex:Exception){
-                                Log.e(TAG, "${ex.message}")
-                            }
-                        }
-                    } else {
-                        if (continuation.isActive){
-                            try {
-                                continuation.resume(emptyList())
-                            }catch (ex:Exception){
-                                Log.e(TAG, "${ex.message}")
-                            }
-                        }
-                        Log.e(TAG, "queryProductDetailsAsync: Failed to query product details. Response code: ${billingResult.responseCode}")
+            billingClient.queryProductDetailsAsync(queryParams) { billingResult, productDetailsList ->
+                if (BillingResponse(billingResult.responseCode).isOk) {
+                    if (continuation.isActive) {
+                        continuation.resume(productDetailsList)
+                    }
+                } else {
+                    Log.e(TAG, "queryProductDetailsAsync: Failed to query product details. Response code: ${billingResult.responseCode}")
+                    if (continuation.isActive) {
+                        continuation.resume(emptyList())
                     }
                 }
             }

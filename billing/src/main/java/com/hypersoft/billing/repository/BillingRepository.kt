@@ -390,7 +390,7 @@ open class BillingRepository(context: Context) {
                                 } else {
                                     productDetail.planTitle = queryUtils.getPlanTitle(pricingPhase.billingPeriod)
                                     productDetail.currencyCode = pricingPhase.priceCurrencyCode
-                                    productDetail.price = pricingPhase.formattedPrice
+                                    productDetail.price = pricingPhase.formattedPrice.removeSuffix(".00")
                                     productDetail.priceAmountMicros = pricingPhase.priceAmountMicros
                                     productDetail.billingPeriod = pricingPhase.billingPeriod
                                 }

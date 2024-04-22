@@ -265,16 +265,25 @@ open class BillingRepository(context: Context) {
             val resultList = ArrayList<PurchaseDetail>()
 
             val completePurchaseList = purchases.map { purchase ->
+                Log.d(TAG, "BillingRepository: Purchase: $purchases")
                 val productParams = queryUtils.getPurchaseParams(userQueryList, purchase.products)
                 val productDetailsList = queryUtils.queryProductDetailsAsync(productParams)
                 CompletePurchase(purchase, productDetailsList)
             }
 
             completePurchaseList.forEach { completePurchase ->
+                Log.d(TAG, "BillingRepository: CompletePurchase: $completePurchase")
+
                 completePurchase.productDetailList.forEach { productDetails ->
                     val productType = if (productDetails.productType == BillingClient.ProductType.INAPP) ProductType.inapp else ProductType.subs
-                    val planId = queryUtils.getPlanId(productDetails.subscriptionOfferDetails)
-                    val planTitle = productDetails.subscriptionOfferDetails?.get(0)?.let { queryUtils.getPlanTitle(it) } ?: ""
+                    val splitList = completePurchase.purchase.accountIdentifiers?.obfuscatedAccountId?.split("_") ?: emptyList()
+                    val planId = if (splitList.isNotEmpty() && splitList.size >= 2) {
+                        splitList[1]
+                    } else {
+                        ""
+                    }
+                    val offerDetails = productDetails.subscriptionOfferDetails?.find { it.basePlanId == planId }
+                    val planTitle = offerDetails?.let { queryUtils.getPlanTitle(it) } ?: ""
 
                     val purchaseDetail = PurchaseDetail(
                         productId = productDetails.productId,
@@ -431,7 +440,7 @@ open class BillingRepository(context: Context) {
                     && it.productDetail.productType == ProductType.inapp
         }
         queryProductDetail?.let {
-            launchFlow(activity = activity!!, it.productDetails, offerToken = null)
+            launchFlow(activity = activity!!, "", it.productDetails, offerToken = null)
         } ?: run {
             Result.setResultState(ResultState.CONSOLE_PRODUCTS_IN_APP_NOT_EXIST)
             onPurchaseListener.onPurchaseResult(false, message = ResultState.CONSOLE_PRODUCTS_IN_APP_NOT_EXIST.message)
@@ -459,16 +468,33 @@ open class BillingRepository(context: Context) {
             return
         }
 
-        launchFlow(activity = activity!!, queryProductDetail.productDetails, offerToken = queryProductDetail.offerDetails.offerToken)
+        launchFlow(activity = activity!!, planId, queryProductDetail.productDetails, offerToken = queryProductDetail.offerDetails.offerToken)
     }
 
-    private fun launchFlow(activity: Activity, productDetails: ProductDetails, offerToken: String?) {
+    private fun launchFlow(activity: Activity, planId: String, productDetails: ProductDetails, offerToken: String?) {
         Log.i(TAG, "launchFlow: Product Details about to be purchase: $productDetails")
         val paramsList = when (offerToken == null) {
             true -> listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(productDetails).build())
             false -> listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(productDetails).setOfferToken(offerToken).build())
         }
-        val flowParams = BillingFlowParams.newBuilder().setProductDetailsParamsList(paramsList).build()
+
+        val timeStamp = "${System.currentTimeMillis()}"
+        val temp = "${timeStamp}_$planId"
+
+        val flowParams = if (planId.isEmpty()) {
+            BillingFlowParams
+                .newBuilder()
+                .setProductDetailsParamsList(paramsList)
+                .build()
+        } else {
+            BillingFlowParams
+                .newBuilder()
+                .setProductDetailsParamsList(paramsList)
+                .setObfuscatedAccountId(temp)
+                .setObfuscatedProfileId(timeStamp)
+                .build()
+        }
+
         billingClient.launchBillingFlow(activity, flowParams)
         Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)
     }
@@ -525,11 +551,24 @@ open class BillingRepository(context: Context) {
             .setSubscriptionReplacementMode(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_FULL_PRICE)
             .build()
 
-        val flowParams =
-            BillingFlowParams.newBuilder()
+        val timeStamp = "${System.currentTimeMillis()}"
+        val temp = "${timeStamp}_$planId"
+
+        val flowParams = if (planId.isEmpty()) {
+            BillingFlowParams
+                .newBuilder()
                 .setProductDetailsParamsList(paramsList)
                 .setSubscriptionUpdateParams(updateParams)
                 .build()
+        } else {
+            BillingFlowParams
+                .newBuilder()
+                .setProductDetailsParamsList(paramsList)
+                .setSubscriptionUpdateParams(updateParams)
+                .setObfuscatedAccountId(temp)
+                .setObfuscatedProfileId(timeStamp)
+                .build()
+        }
 
         billingClient.launchBillingFlow(activity!!, flowParams)
         Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)

@@ -96,7 +96,7 @@ internal class QueryUtils(private val billingClient: BillingClient) {
      * @param subscriptionOfferDetailList: find reliable base plan id for a product
      *
      * @return base plan title according to billingPeriod
-     * @see [com.hypersoft.billing.latest.dataClasses.ProductDetail]
+     * @see [com.hypersoft.billing.dataClasses.ProductDetail]
      */
 
     fun getPlanTitle(subscriptionOfferDetailList: ProductDetails.SubscriptionOfferDetails): String {

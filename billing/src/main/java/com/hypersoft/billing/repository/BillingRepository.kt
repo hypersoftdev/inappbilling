@@ -23,7 +23,7 @@ import com.hypersoft.billing.enums.ResultState
 import com.hypersoft.billing.extensions.toFormattedDate
 import com.hypersoft.billing.interfaces.OnPurchaseListener
 import com.hypersoft.billing.utils.QueryUtils
-import com.hypersoft.billing.utils.Result
+import com.hypersoft.billing.states.Result
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -161,14 +161,17 @@ open class BillingRepository(context: Context) {
                 }
 
                 override fun onBillingSetupFinished(billingResult: BillingResult) {
-                    when (BillingResponse(billingResult.responseCode).isOk) {
+                    val isOk = BillingResponse(billingResult.responseCode).isOk
+                    when (isOk) {
                         true -> Result.setResultState(ResultState.CONNECTION_ESTABLISHED)
                         false -> Result.setResultState(ResultState.CONNECTION_FAILED)
                     }
+                    val message = when (isOk) {
+                        true -> ResultState.CONNECTION_ESTABLISHED.message
+                        false -> billingResult.debugMessage
+                    }
                     onConnectionResult(
-                        callback = callback,
-                        isSuccess = BillingResponse(billingResult.responseCode).isOk,
-                        message = billingResult.debugMessage
+                        callback = callback, isSuccess = BillingResponse(billingResult.responseCode).isOk, message = message
                     )
                 }
             })
@@ -506,7 +509,6 @@ open class BillingRepository(context: Context) {
     protected fun updateSubs(
         activity: Activity?,
         oldProductId: String,
-        oldPlanId: String,
         productId: String,
         planId: String,
         onPurchaseListener: OnPurchaseListener
@@ -514,7 +516,7 @@ open class BillingRepository(context: Context) {
         this.onPurchaseListener = onPurchaseListener
 
         val errorMessage = validationUtils.checkForSubs(activity, productId)
-        val oldPurchase = purchaseDetailList.find { it.productId == oldProductId && it.planId == oldPlanId }
+        val oldPurchase = purchaseDetailList.find { it.productId == oldProductId }
 
         if (errorMessage != null) {
             onPurchaseListener.onPurchaseResult(false, message = errorMessage)
@@ -584,7 +586,7 @@ open class BillingRepository(context: Context) {
                 return@PurchasesUpdatedListener
             }
 
-            response.canFailGracefully -> {
+            response.isAlreadyOwned -> {
                 Result.setResultState(ResultState.PURCHASING_ALREADY_OWNED)
                 onPurchaseListener?.onPurchaseResult(true, ResultState.PURCHASING_ALREADY_OWNED.message)
                 return@PurchasesUpdatedListener
@@ -616,7 +618,7 @@ open class BillingRepository(context: Context) {
 
                 else -> {
                     Result.setResultState(ResultState.PURCHASING_FAILURE)
-                    onPurchaseListener?.onPurchaseResult(true, ResultState.PURCHASING_FAILURE.message)
+                    onPurchaseListener?.onPurchaseResult(false, ResultState.PURCHASING_FAILURE.message)
                 }
             }
         }
@@ -642,7 +644,7 @@ value class BillingResponse(private val code: Int) {
     val isUserCancelled: Boolean
         get() = code == BillingClient.BillingResponseCode.USER_CANCELED
 
-    val canFailGracefully: Boolean
+    val isAlreadyOwned: Boolean
         get() = code == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED
 
     val isRecoverableError: Boolean

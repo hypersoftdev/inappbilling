@@ -37,8 +37,8 @@ class BillingManager(private val context: Context) : BillingController(context) 
         makePurchaseSub(activity = activity, productId = productId, planId = planId, onPurchaseListener = onPurchaseListener)
     }
 
-    fun updateSubPurchase(activity: Activity?, oldProductId: String, oldPlanId: String, productId: String, planId: String, onPurchaseListener: OnPurchaseListener) {
-        updatePurchaseSub(activity = activity, oldProductId = oldProductId, oldPlanId = oldPlanId, productId = productId, planId = planId, onPurchaseListener = onPurchaseListener)
+    fun updateSubPurchase(activity: Activity?, oldProductId: String, productId: String, planId: String, onPurchaseListener: OnPurchaseListener) {
+        updatePurchaseSub(activity = activity, oldProductId = oldProductId, productId = productId, planId = planId, onPurchaseListener = onPurchaseListener)
     }
 
     fun destroyBilling() = cleanBilling()

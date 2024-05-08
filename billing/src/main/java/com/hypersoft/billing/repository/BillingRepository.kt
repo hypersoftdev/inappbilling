@@ -22,8 +22,8 @@ import com.hypersoft.billing.dataClasses.QueryProductDetail
 import com.hypersoft.billing.enums.ResultState
 import com.hypersoft.billing.extensions.toFormattedDate
 import com.hypersoft.billing.interfaces.OnPurchaseListener
-import com.hypersoft.billing.utils.QueryUtils
 import com.hypersoft.billing.states.Result
+import com.hypersoft.billing.utils.QueryUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -553,24 +553,11 @@ open class BillingRepository(context: Context) {
             .setSubscriptionReplacementMode(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_FULL_PRICE)
             .build()
 
-        val timeStamp = "${System.currentTimeMillis()}"
-        val temp = "${timeStamp}_$planId"
-
-        val flowParams = if (planId.isEmpty()) {
-            BillingFlowParams
-                .newBuilder()
-                .setProductDetailsParamsList(paramsList)
-                .setSubscriptionUpdateParams(updateParams)
-                .build()
-        } else {
-            BillingFlowParams
-                .newBuilder()
-                .setProductDetailsParamsList(paramsList)
-                .setSubscriptionUpdateParams(updateParams)
-                .setObfuscatedAccountId(temp)
-                .setObfuscatedProfileId(timeStamp)
-                .build()
-        }
+        val flowParams = BillingFlowParams
+            .newBuilder()
+            .setProductDetailsParamsList(paramsList)
+            .setSubscriptionUpdateParams(updateParams)
+            .build()
 
         billingClient.launchBillingFlow(activity!!, flowParams)
         Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)

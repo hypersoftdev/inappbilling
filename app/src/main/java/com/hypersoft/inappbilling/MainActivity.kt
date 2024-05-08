@@ -83,6 +83,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun purchasesResult(purchaseDetailList: List<PurchaseDetail>) {
+            purchaseDetailList[0].productType
             proceedApp()
         }
     }

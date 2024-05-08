@@ -10,6 +10,7 @@ import com.hypersoft.billing.BillingManager.Companion.TAG
 import com.hypersoft.billing.dataClasses.BestPlan
 import com.hypersoft.billing.enums.ResultState
 import com.hypersoft.billing.repository.BillingResponse
+import com.hypersoft.billing.states.Result
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
@@ -183,6 +184,9 @@ internal class QueryUtils(private val billingClient: BillingClient) {
      */
 
     private fun getPricingOffer(offer: ProductDetails.SubscriptionOfferDetails): ProductDetails.PricingPhase? {
+        if (offer.pricingPhases.pricingPhaseList.size == 1) {
+            return offer.pricingPhases.pricingPhaseList[0]
+        }
         var leastPricingPhase: ProductDetails.PricingPhase? = null
         var lowestPrice = Int.MAX_VALUE
         offer.pricingPhases.pricingPhaseList.forEach { pricingPhase ->

@@ -1,4 +1,4 @@
-package com.hypersoft.billing.utils
+package com.hypersoft.billing.states
 
 import android.util.Log
 import androidx.lifecycle.LiveData

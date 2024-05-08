@@ -72,12 +72,11 @@ open class BillingController(context: Context) : BillingRepository(context) {
     fun updatePurchaseSub(
         activity: Activity?,
         oldProductId: String,
-        oldPlanId: String,
         productId: String,
         planId: String,
         onPurchaseListener: OnPurchaseListener
     ) {
-        updateSubs(activity = activity, oldProductId = oldProductId, oldPlanId = oldPlanId, productId = productId, planId = planId, onPurchaseListener = onPurchaseListener)
+        updateSubs(activity = activity, oldProductId = oldProductId, productId = productId, planId = planId, onPurchaseListener = onPurchaseListener)
     }
 
     fun cleanBilling() {

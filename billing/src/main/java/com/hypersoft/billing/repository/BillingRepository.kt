@@ -443,7 +443,7 @@ open class BillingRepository(context: Context) {
                     && it.productDetail.productType == ProductType.inapp
         }
         queryProductDetail?.let {
-            launchFlow(activity = activity!!, "", it.productDetails, offerToken = null)
+            launchFlow(activity = activity!!, it.productDetails, offerToken = null)
         } ?: run {
             Result.setResultState(ResultState.CONSOLE_PRODUCTS_IN_APP_NOT_EXIST)
             onPurchaseListener.onPurchaseResult(false, message = ResultState.CONSOLE_PRODUCTS_IN_APP_NOT_EXIST.message)
@@ -471,33 +471,17 @@ open class BillingRepository(context: Context) {
             return
         }
 
-        launchFlow(activity = activity!!, planId, queryProductDetail.productDetails, offerToken = queryProductDetail.offerDetails.offerToken)
+        launchFlow(activity = activity!!, queryProductDetail.productDetails, offerToken = queryProductDetail.offerDetails.offerToken)
     }
 
-    private fun launchFlow(activity: Activity, planId: String, productDetails: ProductDetails, offerToken: String?) {
+    private fun launchFlow(activity: Activity, productDetails: ProductDetails, offerToken: String?) {
         Log.i(TAG, "launchFlow: Product Details about to be purchase: $productDetails")
         val paramsList = when (offerToken == null) {
             true -> listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(productDetails).build())
             false -> listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(productDetails).setOfferToken(offerToken).build())
         }
 
-        val timeStamp = "${System.currentTimeMillis()}"
-        val temp = "${timeStamp}_$planId"
-
-        val flowParams = if (planId.isEmpty()) {
-            BillingFlowParams
-                .newBuilder()
-                .setProductDetailsParamsList(paramsList)
-                .build()
-        } else {
-            BillingFlowParams
-                .newBuilder()
-                .setProductDetailsParamsList(paramsList)
-                .setObfuscatedAccountId(temp)
-                .setObfuscatedProfileId(timeStamp)
-                .build()
-        }
-
+        val flowParams = BillingFlowParams.newBuilder().setProductDetailsParamsList(paramsList).build()
         billingClient.launchBillingFlow(activity, flowParams)
         Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)
     }

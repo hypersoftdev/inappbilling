@@ -40,6 +40,7 @@ import kotlinx.coroutines.withContext
  *      -> https://stackoverflow.com/users/20440272/sohaib-ahmed
  */
 
+
 open class BillingRepository(context: Context) {
 
     private val billingClient by lazy {
@@ -267,9 +268,11 @@ open class BillingRepository(context: Context) {
             Result.setResultState(ResultState.CONSOLE_PURCHASE_PRODUCTS_RESPONSE_PROCESSING)
             val resultList = ArrayList<PurchaseDetail>()
 
+            val queryList = userQueryList.map { it.copy() }
+
             val completePurchaseList = purchases.map { purchase ->
                 Log.d(TAG, "BillingRepository: Purchase: $purchases")
-                val productParams = queryUtils.getPurchaseParams(userQueryList, purchase.products)
+                val productParams = queryUtils.getPurchaseParams(queryList, purchase.products)
                 val productDetailsList = queryUtils.queryProductDetailsAsync(productParams)
                 CompletePurchase(purchase, productDetailsList)
             }

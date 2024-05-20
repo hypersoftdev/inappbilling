@@ -9,10 +9,12 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryPurchasesParams
+import com.android.billingclient.api.consumePurchase
 import com.hypersoft.billing.BillingManager.Companion.TAG
 import com.hypersoft.billing.dataClasses.CompletePurchase
 import com.hypersoft.billing.dataClasses.ProductDetail
@@ -39,7 +41,6 @@ import kotlinx.coroutines.withContext
  *      -> https://github.com/epegasus
  *      -> https://stackoverflow.com/users/20440272/sohaib-ahmed
  */
-
 
 open class BillingRepository(context: Context) {
 
@@ -484,7 +485,7 @@ open class BillingRepository(context: Context) {
 
     private fun launchFlow(activity: Activity, productDetails: ProductDetails, offerToken: String?) {
         Log.i(TAG, "launchFlow: Product Details about to be purchase: $productDetails")
-        val paramsList = when (offerToken == null) {
+        val paramsList = when (offerToken.isNullOrEmpty()) {
             true -> listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(productDetails).build())
             false -> listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(productDetails).setOfferToken(offerToken).build())
         }

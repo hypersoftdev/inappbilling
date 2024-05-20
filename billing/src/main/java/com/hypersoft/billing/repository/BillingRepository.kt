@@ -86,6 +86,13 @@ open class BillingRepository(context: Context) {
     private val _storeProductDetailsList: ArrayList<QueryProductDetail> = arrayListOf()
     private val storeProductDetailsList: List<QueryProductDetail> get() = _storeProductDetailsList.toList()
 
+    /**
+     * @property _productDetailList: List of our product detail (in-app & subs)
+     */
+    private val _productDetailList: ArrayList<ProductDetail> = arrayListOf()
+    private val productDetailList: List<ProductDetail> get() = _productDetailList.toList()
+
+
     private val job = Job()
 
     // Listeners
@@ -268,11 +275,9 @@ open class BillingRepository(context: Context) {
             Result.setResultState(ResultState.CONSOLE_PURCHASE_PRODUCTS_RESPONSE_PROCESSING)
             val resultList = ArrayList<PurchaseDetail>()
 
-            val queryList = userQueryList.map { it.copy() }
-
             val completePurchaseList = purchases.map { purchase ->
                 Log.d(TAG, "BillingRepository: Purchase: $purchases")
-                val productParams = queryUtils.getPurchaseParams(queryList, purchase.products)
+                val productParams = queryUtils.getPurchaseParams(userQueryList, purchase.products)
                 val productDetailsList = queryUtils.queryProductDetailsAsync(productParams)
                 CompletePurchase(purchase, productDetailsList)
             }
@@ -326,6 +331,7 @@ open class BillingRepository(context: Context) {
     protected fun fetchStoreProducts() {
         CoroutineScope(Dispatchers.IO + job).launch {
             _storeProductDetailsList.clear()
+            _productDetailList.clear()
 
             // Determine product types to be fetched
             val hasInApp = userQueryList.any { it.first == BillingClient.ProductType.INAPP }
@@ -362,7 +368,6 @@ open class BillingRepository(context: Context) {
     }
 
     private fun processStoreProducts(productDetailsList: List<ProductDetails>, isCompleted: Boolean) {
-        val productDetailList = arrayListOf<ProductDetail>()
         val queryProductDetail = arrayListOf<QueryProductDetail>()
 
         productDetailsList.forEach { productDetails ->
@@ -379,7 +384,7 @@ open class BillingRepository(context: Context) {
                         priceAmountMicros = productDetails.oneTimePurchaseOfferDetails?.priceAmountMicros ?: 0L,
                         billingPeriod = ""
                     )
-                    productDetailList.add(productDetail)
+                    _productDetailList.add(productDetail)
                     queryProductDetail.add(QueryProductDetail(productDetail, productDetails, null))
                 }
 
@@ -411,7 +416,7 @@ open class BillingRepository(context: Context) {
                                 }
                             }
 
-                            productDetailList.add(productDetail)
+                            _productDetailList.add(productDetail)
                             queryProductDetail.add(QueryProductDetail(productDetail, productDetails, offer))
                         }
                     }

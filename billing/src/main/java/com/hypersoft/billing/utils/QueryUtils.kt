@@ -63,7 +63,8 @@ internal class QueryUtils(private val billingClient: BillingClient) {
                     if (continuation.isActive) {
                         try {
                             continuation.resume(productDetailsList)
-                        }catch (ignore:Exception){}
+                        } catch (ignore: Exception) {
+                        }
                     }
                 } else {
                     Log.e(TAG, "queryProductDetailsAsync: Failed to query product details. Response code: ${billingResult.responseCode}")
@@ -71,7 +72,8 @@ internal class QueryUtils(private val billingClient: BillingClient) {
                         try {
                             val list = ArrayList<ProductDetails>()
                             continuation.resume(list)
-                        }catch (ignore:Exception){}
+                        } catch (ignore: Exception) {
+                        }
                     }
                 }
             }

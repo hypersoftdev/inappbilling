@@ -226,7 +226,7 @@ To add products and plans on the Play Console, consider using the following reco
 
 #### Option 1
 
-##### Note: Most Recommended
+##### Note: Most Recommended, One-to-One ids
 
     Product ID: product_id_weekly
     - Plan ID: plan-id-weekly

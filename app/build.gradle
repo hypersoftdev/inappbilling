@@ -8,12 +8,11 @@ android {
     compileSdk 34
 
     defaultConfig {
-        //applicationId "com.hypersoft.inappbilling"
-        applicationId "com.collagemaker.photoeditor.photolayout"
+        applicationId "com.hypersoft.inappbilling"
         minSdk 23
         targetSdk 34
-        versionCode = 26
-        versionName = "1.1.6"
+        versionCode = 1
+        versionName = "1.0.0"
     }
 
     buildTypes {

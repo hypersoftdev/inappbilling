@@ -227,12 +227,15 @@ To add products and plans on the Play Console, consider using the following reco
 #### Option 1
 
 ##### Note: Most Recommended
--> Product ID:          product_id_weekly
-        -- Plan ID:             plan-id-weekly
--> Product ID:          product_id_monthly
-        -- Plan ID:             plan-id-monthly
--> Product ID:          product_id_yearly
-        -- Plan ID:             plan-id-yearly
+
+    Product ID: product_id_weekly
+    - Plan ID: plan-id-weekly
+    
+    Product ID: product_id_monthly
+    - Plan ID: plan-id-monthly
+    
+    Product ID: product_id_yearly
+    - Plan ID: plan-id-yearly
 
 #### Option 2
 
@@ -240,10 +243,10 @@ To add products and plans on the Play Console, consider using the following reco
 
 For Gold Subscription
 
-    Product ID: bronze_product
-    - Plan ID: bronze-plan-weekly
-    - Plan ID: bronze-plan-monthly
-    - Plan ID: bronze-plan-yearly
+    Product ID: gold_product
+    - Plan ID: gold-plan-weekly
+    - Plan ID: gold-plan-monthly
+    - Plan ID: gold-plan-yearly
 
 and so on...
 

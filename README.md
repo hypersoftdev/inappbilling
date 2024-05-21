@@ -220,55 +220,36 @@ billingManager.updateSubPurchase(
 ```
 ## Guidance
 
-### SubscriptionTags
+### Subscription Tags
 
 To add products and plans on the Play Console, consider using the following recommended subscription tags to generate plans.
 
-- Product (Bronze)
-  
-    -- Plan (Weekly)
-    -- Plan (Monthly)
-    -- Plan (Yearly)
-  
-- Product (Silver)
-  
-    -- Plan (Weekly)
-    -- Plan (Monthly)
-    -- Plan (Yearly)
-  
-- Product (Gold)
-  
-    -- Plan (Weekly)
-    -- Plan (Monthly)
-    -- Plan (Yearly)
+#### Option 1
 
+##### Note: Most Recommended
+-> Product ID:          product_id_weekly
+        -- Plan ID:             plan-id-weekly
+-> Product ID:          product_id_monthly
+        -- Plan ID:             plan-id-monthly
+-> Product ID:          product_id_yearly
+        -- Plan ID:             plan-id-yearly
 
-For Bronze Subscription
+#### Option 2
 
-    -> Product ID:          bronze_product
-        -- Plan ID:             bronze-plan-weekly
-        -- Plan ID:             bronze-plan-monthly
-        -- Plan ID:             bronze-plan-yearly
-
-For Silver Subscription
-
-    -> Product ID:          silver_product
-        -- Plan ID:             silver-plan-weekly
-        -- Plan ID:             silver-plan-monthly
-        -- Plan ID:             silver-plan-yearly
+##### Note: If you purchase a product and want to retrieve an old purchase from Google, it won't return the plan ID, making it impossible to identify which plan was purchased. To address this, you should save the purchase information on your server, including the product and plan IDs. This way, you can maintain a purchase list for future reference. Alternatively, you can use `Option 1`, where each product ID is associated with only one plan ID. This ensures that when you fetch a product ID, you can easily determine the corresponding plan that was purchased
 
 For Gold Subscription
 
-    -> Product ID:          gold_product
-        -- Plan ID:             gold-plan-weekly
-        -- Plan ID:             gold-plan-monthly
-        -- Plan ID:             gold-plan-yearly
+    Product ID: bronze_product
+    - Plan ID: bronze-plan-weekly
+    - Plan ID: bronze-plan-monthly
+    - Plan ID: bronze-plan-yearly
 
 and so on...
 
-### Billing Period (subscription)
+### Billing Period (Subscription)
 
-The following billing periods for subscriptions are fixed and cannot be altered.
+Fixed billing periods for subscriptions:
 
     - Weekly
     - Every 4 weeks

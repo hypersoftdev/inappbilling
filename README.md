@@ -1,13 +1,13 @@
 [![](https://jitpack.io/v/hypersoftdev/inappbilling.svg)](https://jitpack.io/#hypersoftdev/inappbilling)
-## inappbilling
+# inappbilling
 
-'inappbilling' is a [Google Play Billing](https://developer.android.com/google/play/billing/integrate) library that demonstrates InApp purchase in your Android application
+**inappbilling** is a [Google Play Billing](https://developer.android.com/google/play/billing/integrate) library that demonstrates how to implement in-app purchases and subscriptions in your Android application
 
-### Getting Started
+## Gradle Integration
 
-#### Step A
+### Step A: Add Maven Repository
 
-Add maven repository in project level `build.gradle(project)` or in latest project `setting.gradle` file
+In your project-level **build.gradle** or **settings.gradle** file, add the JitPack repository:
 ```
 repositories {
     google()
@@ -16,65 +16,61 @@ repositories {
 }
 ```  
 
-#### Step B
+### Step B: Add Dependencies
 
-Add dependencies in App level `build.gradle(app)`. Latest Version [![](https://jitpack.io/v/hypersoftdev/inappbilling.svg)](https://jitpack.io/#hypersoftdev/inappbilling)
+In your app-level **build.gradle** file, add the library dependency. Use the latest version: [![](https://jitpack.io/v/hypersoftdev/inappbilling.svg)](https://jitpack.io/#hypersoftdev/inappbilling)
 ```
-dependencies {
-    implementation 'com.github.hypersoftdev:inappbilling:x.x.x'
-}
+implementation 'com.github.hypersoftdev:inappbilling:x.x.x'
 ```
 
 ---
 
-## Pre-Release IMPLEMENTATION
+## Technical Implementation
 
-> [!TIP]
-> Observe the states by using `BillingManager` TAG
+### Step 1: Initialize Billing
 
-### Step 1 (Initialize Billing)
-
-Initialize the `BillingManager` class, where the parameter 'context' refers to an application context.
+Initialize the **BillingManager** with the application `context`:
 
 ```
 private val billingManager by lazy { BillingManager(context) }
 ```
 
-### Step # 2 (Billing Connection)
+### Step 2: Establish Billing Connection
 
-Retrieve a debugging ID for testing purposes by utilizing the `getDebugProductIDList()` method. Ensure that the parameter `purchaseDetailList` represents a list containing all active purchases along with their respective details.
+Retrieve a debugging ID for testing and ensure the `purchaseDetailList` parameter contains all active purchases and their details:
 
 ```
 val subsProductIdList = listOf("subs_product_id_1", "subs_product_id_2", "subs_product_id_3")
-val inAppProductIdList = when (BuildConfig.DEBUG) {
-    true -> listOf(billingManager.getDebugProductIDList())
-    false -> listOf("inapp_product_id_1", "inapp_product_id_2")
+val inAppProductIdList = if (BuildConfig.DEBUG) {
+    listOf(billingManager.getDebugProductIDList())
+} else {
+    listOf("inapp_product_id_1", "inapp_product_id_2")
 }
 
-billingManager.initialize(
-    productInAppPurchases = inAppProductIdList,
-    productSubscriptions = subsProductIdList,
-    billingListener = object : BillingListener {
-        override fun onConnectionResult(isSuccess: Boolean, message: String) {
-            Log.d(TAG, "Billing: initBilling: onConnectionResult: isSuccess = $isSuccess - message = $message")
-            if (!isSuccess) {
-                proceedApp()
+  billingManager.initialize(
+            productInAppPurchases = inAppProductIdList,
+            productSubscriptions = subsProductIdList,
+            billingListener = object : BillingListener {
+                override fun onConnectionResult(isSuccess: Boolean, message: String) {
+                    Log.d(
+                        "BillingTAG",
+                        "Billing: initBilling: onConnectionResult: isSuccess = $isSuccess - message = $message"
+                    )
+                }
+
+                override fun purchasesResult(purchaseDetailList: List<PurchaseDetail>) {
+                    if (purchaseDetailList.isEmpty()) {
+                        // No purchase found, reset all sharedPreferences (premium properties)
+                    }
+                    purchaseDetailList.forEachIndexed { index, purchaseDetail ->
+                        Log.d("BillingTAG", "Billing: initBilling: purchasesResult: $index) $purchaseDetail ")
+                    }
+                }
             }
-        }
-        override fun purchasesResult(purchaseDetailList: List<PurchaseDetail>) {
-            if (purchaseDetailList.isEmpty()) {
-                // No purchase found, reset all sharedPreferences (premium properties)
-            }
-            purchaseDetailList.forEachIndexed { index, purchaseDetail ->
-                Log.d(TAG, "Billing: initBilling: purchasesResult: $index) $purchaseDetail ")
-            }
-            proceedApp()
-        }
-    }
-)
+        )
 
 ```
-Access comprehensive details of the currently purchased item using the `PurchaseDetail` class.
+Access comprehensive details of the currently purchased item using the `PurchaseDetail` class:
 
 ```
 /**
@@ -102,38 +98,34 @@ data class PurchaseDetail(
 )
 ```
 
-### Step # 3 (Query Product)
+### Step 3: Query Product
 
-This observer monitors all active in-app and subscription products.
+Monitor all active in-app and subscription products:
 
 ```
 val subsProductIdList = listOf("subs_product_id_1", "subs_product_id_2", "subs_product_id_3")
-val subsPlanIdList = listOf("subs_plan_id_1", "subs_plan_id_2", "subs_plan_id_3")
+val subsPlanIdList = listOf("subs-plan-id-1", "subs-plan-id-2", "subs-plan-id-3")
 
 billingManager.productDetailsLiveData.observe(viewLifecycleOwner) { productDetailList ->
-    Log.d(TAG, "Billing: initObservers: $productDetailList")
+    Log.d("BillingTAG", "Billing: initObservers: $productDetailList")
 
     productDetailList.forEach { productDetail ->
         if (productDetail.productType == ProductType.inapp) {
-            if (productDetail.productId == "inapp_product_id_1") {
-                // productDetail
-            } else if (productDetail.productId == "inapp_product_id_2") {
-                // productDetail
+            when (productDetail.productId) {
+                "inapp_product_id_1" -> { /* Handle in-app product 1 */ }
+                "inapp_product_id_2" -> { /* Handle in-app product 2 */ }
             }
         } else {
-            if (productDetail.productId == "subs_product_id_1" && productDetail.planId == "subs_plan_id_1") {
-                // productDetail (monthly)
-            } else if (productDetail.productId == "subs_product_id_2" && productDetail.planId == "subs_plan_id_2") {
-                // productDetail (3 months)
-            } else if (productDetail.productId == "subs_product_id_3" && productDetail.planId == "subs_plan_id_3") {
-                // productDetail (yearly)
+            when (productDetail.productId) {
+                "subs_product_id_1" -> if (productDetail.planId == "subs-plan-id-1") { /* Handle plan1 subscription */ }
+                "subs_product_id_2" -> if (productDetail.planId == "subs-plan-id-2") { /* Handle plan2 subscription */ }
+                "subs_product_id_3" -> if (productDetail.planId == "subs-plan-id-3") { /* Handle plan3 subscription */ }
             }
         }
     }
 }
-
 ```
-Retrieve comprehensive details of the item using the `ProductDetail` class.
+Retrieve comprehensive details of the item using the `ProductDetail` class:
 
 ```
 @param productId: Unique ID (Console's ID) for product
@@ -170,29 +162,34 @@ data class ProductDetail(
 )
 ```
 
-### Step # 4 (Make purchases)
-### Purchasing InApp
+### Step 4: Make Purchases
+
+#### Purchasing In-App Products
 
 ```
 billingManager.makeInAppPurchase(activity, productId, object : OnPurchaseListener {
     override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
-        Log.d(TAG, "makeInAppPurchase: $isPurchaseSuccess - $message")
+        Log.d("BillingTAG", "makeInAppPurchase: $isPurchaseSuccess - $message")
     }
 })
 
 ```
 
-### Purchasing Subscription
+#### Purchasing Subscriptions
 
 ```
-billingManager.makeSubPurchase(activity, productId, planId, object : OnPurchaseListener {
-    override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
-        Log.d(TAG, "makeSubPurchase: $isPurchaseSuccess - $message")
-    }
-})
+  billingManager.makeSubPurchase(activity,
+                    productId = "subs_product_id_1,
+                    planId = "subs-plan-id-1,
+                    object : OnPurchaseListener {
+                        override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
+                            Log.d("BillingTAG", "makeSubPurchase: $isPurchaseSuccess - $message")
+                        }
+                    })
+
 ```
 
-### Updating Subscription
+#### Updating Subscriptions
 
 ```
 billingManager.updateSubPurchase(
@@ -203,10 +200,22 @@ billingManager.updateSubPurchase(
     planId = "subs_plan_id_2",
     object : OnPurchaseListener {
         override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
-            Log.d(TAG, "updateSubPurchase: $isPurchaseSuccess - $message")
+            Log.d("BillingTAG", "updateSubPurchase: $isPurchaseSuccess - $message")
         }
     }
 )
+
+billingManager.updateSubPurchase(
+                    activity,
+                    oldProductId = "mOldProductID",
+                    productId = "New Product ID",
+                    planId = "New Plan ID",
+                    object : OnPurchaseListener {
+                        override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
+                      Log.d("BillingTAG", "updateSubPurchase: $isPurchaseSuccess - $message")
+                        }
+                    }
+                )
 
 ```
 ## Guidance
@@ -272,6 +281,9 @@ The following billing periods for subscriptions are fixed and cannot be altered.
     - Yearly
 
 ---
+
+> [!TIP]
+> Note: Use the **BillingManager** tag to observe the states
 
 # LICENSE
 

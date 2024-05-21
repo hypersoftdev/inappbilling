@@ -226,7 +226,7 @@ To add products and plans on the Play Console, consider using the following reco
 
 #### Option 1
 
-##### Note: Most Recommended, One-to-One ids
+##### Note: One-to-One ids
 
     Product ID: product_id_weekly
     - Plan ID: plan-id-weekly
@@ -239,7 +239,8 @@ To add products and plans on the Play Console, consider using the following reco
 
 #### Option 2
 
-##### Note: If you purchase a product and want to retrieve an old purchase from Google, it won't return the plan ID, making it impossible to identify which plan was purchased. To address this, you should save the purchase information on your server, including the product and plan IDs. This way, you can maintain a purchase list for future reference. Alternatively, you can use `Option 1`, where each product ID is associated with only one plan ID. This ensures that when you fetch a product ID, you can easily determine the corresponding plan that was purchased
+##### Note: 
+If you purchase a product and want to retrieve an old purchase from Google, it won't return the plan ID, making it impossible to identify which plan was purchased. To address this, you should save the purchase information on your server, including the product and plan IDs. This way, you can maintain a purchase list for future reference. Alternatively, you can use `Option 1`, where each product ID is associated with only one plan ID. This ensures that when you fetch a product ID, you can easily determine the corresponding plan that was purchased
 
 For Gold Subscription
 

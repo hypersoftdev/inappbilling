@@ -75,6 +75,9 @@ object Result {
             ResultState.PURCHASING_ALREADY_OWNED -> ResultState.PURCHASING_ALREADY_OWNED.message
             ResultState.PURCHASING_NO_PURCHASES_FOUND -> ResultState.PURCHASING_NO_PURCHASES_FOUND.message
             ResultState.PURCHASING_FAILURE -> ResultState.PURCHASING_FAILURE.message
+
+            ResultState.PURCHASE_CONSUME -> ResultState.PURCHASE_CONSUME.message
+            ResultState.PURCHASE_FAILURE -> ResultState.PURCHASE_FAILURE.message
         }
     }
 }

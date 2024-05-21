@@ -9,6 +9,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
@@ -56,8 +57,11 @@ open class BillingRepository(context: Context) {
      * @property _purchasesSharedFlow: Collect (observe) this, to get user's purchase list currently owns
      */
     private val _purchasesSharedFlow = MutableSharedFlow<List<PurchaseDetail>>()
-    val purchasesSharedFlow = _purchasesSharedFlow.asSharedFlow()
+    protected val purchasesSharedFlow = _purchasesSharedFlow.asSharedFlow()
 
+    /**
+     * @property _productDetailsLiveData: List of active products available on console with their dynamic prices.
+     */
     private val _productDetailsLiveData = MutableLiveData<List<ProductDetail>>()
     val productDetailsLiveData: LiveData<List<ProductDetail>> = _productDetailsLiveData
 
@@ -66,6 +70,12 @@ open class BillingRepository(context: Context) {
      */
     private val _userQueryList: ArrayList<Pair<String, String>> = arrayListOf()
     private val userQueryList: List<Pair<String, String>> get() = _userQueryList.toList()
+
+    /**
+     * @property _consumableList: List of in-app products that should be consumed
+     */
+    private val _consumableList: ArrayList<String> = arrayListOf()
+    private val consumableList: List<String> get() = _consumableList.toList()
 
     /**
      * @property _purchases: List of all purchases that this user has ever made and currently owns.
@@ -91,16 +101,20 @@ open class BillingRepository(context: Context) {
     private val _productDetailList: ArrayList<ProductDetail> = arrayListOf()
     private val productDetailList: List<ProductDetail> get() = _productDetailList.toList()
 
-
+    /**
+     * @property job: Created a job for fetching purchased and active products list.
+     */
     private val job = Job()
 
-    // Listeners
+    /**
+     * @property onPurchaseListener: Listen purchases result made by user.
+     */
     private var onPurchaseListener: OnPurchaseListener? = null
 
     /**
      *  Step 1: Billing Connection
      *   @see startConnection
-     *   @see onConnectionResult
+     *   @see onConnectionResultMain
      *
      *  Step 2: Purchase History -> InApps / Subs
      *   @see fetchPurchases
@@ -149,14 +163,14 @@ open class BillingRepository(context: Context) {
         // Check if connection is already being establishing
         if (Result.getResultState() == ResultState.CONNECTION_ESTABLISHING) {
             Result.setResultState(ResultState.CONNECTION_ESTABLISHING_IN_PROGRESS)
-            onConnectionResult(callback, false, ResultState.CONNECTION_ESTABLISHING_IN_PROGRESS.message)
+            onConnectionResultMain(callback, false, ResultState.CONNECTION_ESTABLISHING_IN_PROGRESS.message)
             return
         }
         Result.setResultState(ResultState.CONNECTION_ESTABLISHING)
 
         if (billingClient.isReady) {
             Result.setResultState(ResultState.CONNECTION_ALREADY_ESTABLISHED)
-            onConnectionResult(callback, true, ResultState.CONNECTION_ALREADY_ESTABLISHED.message)
+            onConnectionResultMain(callback, true, ResultState.CONNECTION_ALREADY_ESTABLISHED.message)
             return
         }
 
@@ -164,7 +178,7 @@ open class BillingRepository(context: Context) {
             billingClient.startConnection(object : BillingClientStateListener {
                 override fun onBillingServiceDisconnected() {
                     Result.setResultState(ResultState.CONNECTION_DISCONNECTED)
-                    onConnectionResult(callback, isSuccess = false, message = ResultState.CONNECTION_DISCONNECTED.message)
+                    onConnectionResultMain(callback, isSuccess = false, message = ResultState.CONNECTION_DISCONNECTED.message)
                 }
 
                 override fun onBillingSetupFinished(billingResult: BillingResult) {
@@ -177,15 +191,13 @@ open class BillingRepository(context: Context) {
                         true -> ResultState.CONNECTION_ESTABLISHED.message
                         false -> billingResult.debugMessage
                     }
-                    onConnectionResult(
-                        callback = callback, isSuccess = BillingResponse(billingResult.responseCode).isOk, message = message
-                    )
+                    onConnectionResultMain(callback = callback, isSuccess = BillingResponse(billingResult.responseCode).isOk, message = message)
                 }
             })
         }
     }
 
-    private fun onConnectionResult(callback: (isSuccess: Boolean, message: String) -> Unit, isSuccess: Boolean, message: String) {
+    private fun onConnectionResultMain(callback: (isSuccess: Boolean, message: String) -> Unit, isSuccess: Boolean, message: String) {
         CoroutineScope(Dispatchers.Main).launch {
             callback.invoke(isSuccess, message)
         }
@@ -195,11 +207,14 @@ open class BillingRepository(context: Context) {
     /* ------------------------------------------ User Queries ------------------------------------------ */
     /* -------------------------------------------------------------------------------------------------- */
 
-    protected fun setUserQueries(userInAppPurchases: List<String>, userSubsPurchases: List<String>) {
+    protected fun setUserQueries(userInAppConsumable: List<String>, userInAppNonConsumable: List<String>, userSubsPurchases: List<String>) {
         _userQueryList.clear()
+        _consumableList.clear()
 
         // Save user queries
-        userInAppPurchases.forEach { _userQueryList.add(Pair(BillingClient.ProductType.INAPP, it)) }
+        _consumableList.addAll(userInAppConsumable)
+        userInAppConsumable.forEach { _userQueryList.add(Pair(BillingClient.ProductType.INAPP, it)) }
+        userInAppNonConsumable.forEach { _userQueryList.add(Pair(BillingClient.ProductType.INAPP, it)) }
         userSubsPurchases.forEach { _userQueryList.add(Pair(BillingClient.ProductType.SUBS, it)) }
     }
 
@@ -262,6 +277,13 @@ open class BillingRepository(context: Context) {
             }
     }
 
+    private fun consumeProduct(purchase: Purchase) {
+        val consumeParams = ConsumeParams.newBuilder().setPurchaseToken(purchase.purchaseToken).build()
+        billingClient.consumeAsync(consumeParams) { billingResult, _ ->
+            Log.d(TAG, "queryPurchases: consumeProduct: consumed: Code: ${billingResult.responseCode} -- ${billingResult.debugMessage}")
+        }
+    }
+
     /**
      * Calls once, Scenarios where a purchase might have 0 products:
      *  ->  Refunded purchase
@@ -312,7 +334,7 @@ open class BillingRepository(context: Context) {
             Result.setResultState(ResultState.CONSOLE_PURCHASE_PRODUCTS_RESPONSE_COMPLETE)
             Result.setResultState(ResultState.CONSOLE_PURCHASE_PRODUCTS_CHECKED_FOR_ACKNOWLEDGEMENT)
 
-            queryUtils.checkForAcknowledgements(purchases)
+            queryUtils.checkForAcknowledgements(purchases, consumableList)
 
             _purchaseDetailList.clear()
             _purchaseDetailList.addAll(resultList)
@@ -554,7 +576,8 @@ open class BillingRepository(context: Context) {
         Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)
     }
 
-    private val purchasesListener = PurchasesUpdatedListener { billingResult, purchasesList ->
+    private val purchasesListener: PurchasesUpdatedListener = PurchasesUpdatedListener { billingResult, purchasesList: List<Purchase>? ->
+        Log.d(TAG, "PurchasesUpdatedListener: purchasesListener: ${billingResult.responseCode} -- ${billingResult.debugMessage}")
         val response = BillingResponse(billingResult.responseCode)
         when {
             response.isOk -> {
@@ -565,6 +588,8 @@ open class BillingRepository(context: Context) {
             }
 
             response.isAlreadyOwned -> {
+                // If already owned but has not been consumed yet.
+                purchasesList?.let { queryUtils.checkForAcknowledgements(it, consumableList) }
                 Result.setResultState(ResultState.PURCHASING_ALREADY_OWNED)
                 onPurchaseListener?.onPurchaseResult(true, ResultState.PURCHASING_ALREADY_OWNED.message)
                 return@PurchasesUpdatedListener
@@ -579,26 +604,54 @@ open class BillingRepository(context: Context) {
         onPurchaseListener?.onPurchaseResult(false, Result.getResultState().message)
     }
 
-    private fun handlePurchase(purchasesList: MutableList<Purchase>?) = CoroutineScope(Dispatchers.Main).launch {
+    private fun handlePurchase(purchasesList: List<Purchase>?) = CoroutineScope(Dispatchers.Main).launch {
         if (purchasesList == null) {
             Result.setResultState(ResultState.PURCHASING_NO_PURCHASES_FOUND)
-            onPurchaseListener?.onPurchaseResult(false, ResultState.PURCHASING_NO_PURCHASES_FOUND.message)
+            onPurchaseResultMain(false, ResultState.PURCHASING_NO_PURCHASES_FOUND.message)
             return@launch
         }
-        queryUtils.checkForAcknowledgements(purchasesList)
 
+        // Iterate and search for consumable product if any
         purchasesList.forEach { purchase ->
+            var isConsumable = false
+            purchase.products.forEach inner@{
+                if (consumableList.contains(it)) {
+                    isConsumable = true
+                    return@inner
+                }
+            }
+
             when (purchase.purchaseState) {
                 Purchase.PurchaseState.PURCHASED -> {
                     Result.setResultState(ResultState.PURCHASING_SUCCESSFULLY)
-                    onPurchaseListener?.onPurchaseResult(true, ResultState.PURCHASING_SUCCESSFULLY.message)
+                    if (isConsumable.not()) {
+                        onPurchaseResultMain(true, ResultState.PURCHASING_SUCCESSFULLY.message)
+                        return@forEach
+                    }
                 }
 
                 else -> {
                     Result.setResultState(ResultState.PURCHASING_FAILURE)
-                    onPurchaseListener?.onPurchaseResult(false, ResultState.PURCHASING_FAILURE.message)
+                    onPurchaseResultMain(false, ResultState.PURCHASING_FAILURE.message)
                 }
             }
+        }
+
+        // if isConsumable = true
+        queryUtils.checkForAcknowledgementsAndConsumable(purchasesList) {
+            if (it) {
+                Result.setResultState(ResultState.PURCHASE_CONSUME)
+                onPurchaseResultMain(true, ResultState.PURCHASE_CONSUME.message)
+            } else {
+                Result.setResultState(ResultState.PURCHASE_FAILURE)
+                onPurchaseResultMain(false, ResultState.PURCHASE_FAILURE.message)
+            }
+        }
+    }
+
+    private fun onPurchaseResultMain(isSuccess: Boolean, message: String) {
+        CoroutineScope(Dispatchers.Main).launch {
+            onPurchaseListener?.onPurchaseResult(isPurchaseSuccess = isSuccess, message = message)
         }
     }
 

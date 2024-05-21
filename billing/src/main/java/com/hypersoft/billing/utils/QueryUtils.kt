@@ -1,8 +1,10 @@
 package com.hypersoft.billing.utils
 
+import android.os.Build
 import android.util.Log
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.QueryProductDetailsParams
@@ -11,6 +13,9 @@ import com.hypersoft.billing.dataClasses.BestPlan
 import com.hypersoft.billing.enums.ResultState
 import com.hypersoft.billing.repository.BillingResponse
 import com.hypersoft.billing.states.Result
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
@@ -239,7 +244,7 @@ internal class QueryUtils(private val billingClient: BillingClient) {
      *  otherwise user will get his/her cost back after 3 days.
      */
 
-    fun checkForAcknowledgements(purchases: List<Purchase>) {
+    fun checkForAcknowledgements(purchases: List<Purchase>, consumableList: List<String>) {
         val count = purchases.count { it.isAcknowledged.not() }
         Log.i(TAG, "checkForAcknowledgements: $count purchase(s) needs to be acknowledge")
 
@@ -248,12 +253,78 @@ internal class QueryUtils(private val billingClient: BillingClient) {
             if (purchase.isAcknowledged.not()) {
                 val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder().setPurchaseToken(purchase.purchaseToken)
                 billingClient.acknowledgePurchase(acknowledgePurchaseParams.build()) { billingResult ->
+                    consumeProduct(purchase, consumableList)
                     when (BillingResponse(billingResult.responseCode).isOk) {
                         true -> Log.d(TAG, "checkForAcknowledgements: Payment has been successfully acknowledged for these products: ${purchase.products}")
                         false -> Log.e(TAG, "checkForAcknowledgements: Payment has been failed to acknowledge for these products: ${purchase.products}")
                     }
                 }
+            } else {
+                consumeProduct(purchase, consumableList)
             }
+        }
+    }
+
+    private fun consumeProduct(purchase: Purchase, consumableList: List<String>) {
+        CoroutineScope(Dispatchers.IO).launch {
+            var isConsumable = false
+            purchase.products.forEach inner@{
+                if (consumableList.contains(it)) {
+                    isConsumable = true
+                    return@inner
+                }
+            }
+            if (isConsumable.not()) return@launch
+
+            // Consume only consumable products given by developers
+            val consumeParams = ConsumeParams.newBuilder().setPurchaseToken(purchase.purchaseToken).build()
+            billingClient.consumeAsync(consumeParams) { billingResult, _ ->
+                Log.d(TAG, "queryPurchases: consumeProduct: Status Code: ${billingResult.responseCode} -- ${billingResult.debugMessage}")
+            }
+        }
+    }
+
+    fun checkForAcknowledgementsAndConsumable(purchases: List<Purchase>, callback: (Boolean) -> Unit) {
+        val count = purchases.count { it.isAcknowledged.not() }
+        Log.i(TAG, "checkForAcknowledgements: $count purchase(s) needs to be acknowledge")
+
+        val hashMap = HashMap<Int, Boolean>()
+
+        // Start acknowledging...
+        purchases.forEachIndexed { index, purchase ->
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                hashMap.putIfAbsent(index, false)
+            } else {
+                if (hashMap.containsKey(index).not()) {
+                    hashMap[index] = false
+                }
+            }
+            if (purchase.isAcknowledged.not()) {
+                val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder().setPurchaseToken(purchase.purchaseToken)
+                billingClient.acknowledgePurchase(acknowledgePurchaseParams.build()) { billingResult ->
+                    consumeProductPurchase(purchase, hashMap, index, callback)
+                    when (BillingResponse(billingResult.responseCode).isOk) {
+                        true -> Log.d(TAG, "checkForAcknowledgements: Payment has been successfully acknowledged for these products: ${purchase.products}")
+                        false -> Log.e(TAG, "checkForAcknowledgements: Payment has been failed to acknowledge for these products: ${purchase.products}")
+                    }
+                }
+            } else {
+                consumeProductPurchase(purchase, hashMap, index, callback)
+            }
+        }
+    }
+
+    private fun consumeProductPurchase(purchase: Purchase, hashMap: HashMap<Int, Boolean>, index: Int, callback: (Boolean) -> Unit) {
+        val consumeParams = ConsumeParams.newBuilder().setPurchaseToken(purchase.purchaseToken).build()
+        billingClient.consumeAsync(consumeParams) { billingResult, _ ->
+            Log.d(TAG, "queryPurchases: consumeProductPurchase: consumed: Code: ${billingResult.responseCode} -- ${billingResult.debugMessage}")
+            hashMap[index] = true
+            hashMap.forEach {
+                if (!it.value) {
+                    return@consumeAsync
+                }
+            }
+            callback.invoke(BillingResponse(billingResult.responseCode).isOk)
         }
     }
 }

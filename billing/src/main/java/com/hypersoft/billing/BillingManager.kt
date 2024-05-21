@@ -13,17 +13,20 @@ import com.hypersoft.billing.interfaces.OnPurchaseListener
 class BillingManager(private val context: Context) : BillingController(context) {
 
     /**
-     *  @param productInAppPurchases: Pass list of in-app product's ID
+     *  @param productInAppConsumable: Pass list of in-app product's ID (consumable) or pass emptyList
+     *  @param productInAppNonConsumable: Pass list of in-app product's ID
      *  @param productSubscriptions: Pass list of subscription product's ID
      */
 
     fun initialize(
-        productInAppPurchases: List<String>,
+        productInAppConsumable: List<String>,
+        productInAppNonConsumable: List<String>,
         productSubscriptions: List<String>,
         billingListener: BillingListener? = null
     ) {
         startBillingConnection(
-            userInAppPurchases = productInAppPurchases,
+            userInAppConsumable = productInAppConsumable,
+            userInAppNonConsumable = productInAppNonConsumable,
             userSubsPurchases = productSubscriptions,
             billingListener = billingListener
         )

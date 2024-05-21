@@ -25,7 +25,8 @@ open class BillingController(context: Context) : BillingRepository(context) {
     private var job: Job? = null
 
     fun startBillingConnection(
-        userInAppPurchases: List<String>,
+        userInAppConsumable: List<String>,
+        userInAppNonConsumable: List<String>,
         userSubsPurchases: List<String>,
         billingListener: BillingListener? = null
     ) {
@@ -34,13 +35,13 @@ open class BillingController(context: Context) : BillingRepository(context) {
         startConnection { isSuccess, message ->
             billingListener?.onConnectionResult(isSuccess, message)
             if (isSuccess) {
-                fetchData(userInAppPurchases, userSubsPurchases)
+                fetchData(userInAppConsumable, userInAppNonConsumable, userSubsPurchases)
             }
         }
     }
 
-    private fun fetchData(userInAppPurchases: List<String>, userSubsPurchases: List<String>) {
-        setUserQueries(userInAppPurchases, userSubsPurchases)
+    private fun fetchData(userInAppConsumable: List<String>, userInAppNonConsumable: List<String>, userSubsPurchases: List<String>) {
+        setUserQueries(userInAppConsumable, userInAppNonConsumable, userSubsPurchases)
         fetchPurchases()
         fetchStoreProducts()
 

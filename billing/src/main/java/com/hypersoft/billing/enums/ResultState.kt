@@ -62,4 +62,7 @@ enum class ResultState(val message: String) {
     PURCHASING_ALREADY_OWNED("Already owned this product! No need to purchase"),
     PURCHASING_SUCCESSFULLY("Successfully Purchased"),
     PURCHASING_FAILURE("Failed to make transaction"),
+
+    PURCHASE_CONSUME("Successfully Consumed"),
+    PURCHASE_FAILURE("Failed to consume product")
 }

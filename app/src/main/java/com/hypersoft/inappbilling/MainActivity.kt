@@ -53,25 +53,21 @@ class MainActivity : AppCompatActivity() {
      */
 
     private fun initBilling() {
-        val productIds = when (BuildConfig.DEBUG) {
-            true -> listOf(billingManager.getDebugProductIDList())
+        val productInAppConsumable = when (BuildConfig.DEBUG) {
+            true -> listOf("test")
             false -> listOf("abc", "def")
+        }
+        val productInAppNonConsumable = when (BuildConfig.DEBUG) {
+            true -> listOf(billingManager.getDebugProductIDList())
+            false -> listOf(packageName)
         }
 
         billingManager.initialize(
-            productInAppPurchases = productIds,
-            productSubscriptions = listOf("Bronze", "Silver", "Gold", "Yearly"),
+            productInAppConsumable = productInAppConsumable,
+            productInAppNonConsumable = productInAppNonConsumable,
+            productSubscriptions = listOf("Bronze", "Silver", "Gold"),
             billingListener = billingListener
         )
-    }
-
-    private fun initObserver() {
-        billingManager.productDetailsLiveData.observe(this) { productDetailList ->
-            Log.d(TAG, "initNewObserver: --------------------------------------")
-            productDetailList.forEach { productDetail ->
-                Log.d(TAG, "---: $productDetail")
-            }
-        }
     }
 
     private val billingListener = object : BillingListener {
@@ -83,8 +79,18 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun purchasesResult(purchaseDetailList: List<PurchaseDetail>) {
-            purchaseDetailList[0].productType
+            Log.d(TAG, "onConnectionResult: purchaseDetailList: $purchaseDetailList")
+            //purchaseDetailList[0].productType
             proceedApp()
+        }
+    }
+
+    private fun initObserver() {
+        billingManager.productDetailsLiveData.observe(this) { productDetailList ->
+            Log.d(TAG, "initNewObserver: --------------------------------------")
+            productDetailList.forEach { productDetail ->
+                Log.d(TAG, "---: $productDetail")
+            }
         }
     }
 
@@ -94,7 +100,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun onPurchaseClick() {
         // In-App
-        billingManager.makeInAppPurchase(this, billingManager.getDebugProductIDList(), onPurchaseListener)
+        billingManager.makeInAppPurchase(this, "test", onPurchaseListener)
 
         // Subscription
         //billingManager.makeSubPurchase(this, "product_abc", "plan_abc", onPurchaseListener)

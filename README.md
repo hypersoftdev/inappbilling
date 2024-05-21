@@ -41,33 +41,35 @@ Retrieve a debugging ID for testing and ensure the `purchaseDetailList` paramete
 
 ```
 val subsProductIdList = listOf("subs_product_id_1", "subs_product_id_2", "subs_product_id_3")
-val inAppProductIdList = if (BuildConfig.DEBUG) {
-    listOf(billingManager.getDebugProductIDList())
-} else {
-    listOf("inapp_product_id_1", "inapp_product_id_2")
+
+val productInAppConsumable = when (BuildConfig.DEBUG) {
+    true -> listOf("product_id_1")
+    false -> listOf("product_id_1", "product_id_2")
+}
+val productInAppNonConsumable = when (BuildConfig.DEBUG) {
+    true -> listOf(billingManager.getDebugProductIDList())
+    false -> listOf("product_id_1", "product_id_2")
 }
 
-  billingManager.initialize(
-            productInAppPurchases = inAppProductIdList,
-            productSubscriptions = subsProductIdList,
-            billingListener = object : BillingListener {
-                override fun onConnectionResult(isSuccess: Boolean, message: String) {
-                    Log.d(
-                        "BillingTAG",
-                        "Billing: initBilling: onConnectionResult: isSuccess = $isSuccess - message = $message"
-                    )
-                }
-
-                override fun purchasesResult(purchaseDetailList: List<PurchaseDetail>) {
-                    if (purchaseDetailList.isEmpty()) {
-                        // No purchase found, reset all sharedPreferences (premium properties)
-                    }
-                    purchaseDetailList.forEachIndexed { index, purchaseDetail ->
-                        Log.d("BillingTAG", "Billing: initBilling: purchasesResult: $index) $purchaseDetail ")
-                    }
-                }
+billingManager.initialize(
+    productInAppConsumable = productInAppConsumable,
+    productInAppNonConsumable = productInAppNonConsumable,
+    productSubscriptions = subsProductIdList,
+    billingListener = object : BillingListener {
+        override fun onConnectionResult(isSuccess: Boolean, message: String) {
+            Log.d("BillingTAG", "Billing: initBilling: onConnectionResult: isSuccess = $isSuccess - message = $message")
+        }
+    
+        override fun purchasesResult(purchaseDetailList: List<PurchaseDetail>) {
+            if (purchaseDetailList.isEmpty()) {
+                // No purchase found, reset all sharedPreferences (premium properties)
             }
-        )
+            purchaseDetailList.forEachIndexed { index, purchaseDetail ->
+                Log.d("BillingTAG", "Billing: initBilling: purchasesResult: $index) $purchaseDetail ")
+            }
+        }
+    }
+)
 
 ```
 Access comprehensive details of the currently purchased item using the `PurchaseDetail` class:

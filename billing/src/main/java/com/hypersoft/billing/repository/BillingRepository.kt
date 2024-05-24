@@ -605,17 +605,13 @@ open class BillingRepository(context: Context) {
     }
 
     private fun handlePurchase(purchasesList: List<Purchase>?) = CoroutineScope(Dispatchers.IO).launch {
-        Log.d(TAG, "handlePurchase: 1")
         if (purchasesList == null) {
             Result.setResultState(ResultState.PURCHASING_NO_PURCHASES_FOUND)
             onPurchaseResultMain(false, ResultState.PURCHASING_NO_PURCHASES_FOUND.message)
             return@launch
         }
 
-        Log.d(TAG, "handlePurchase: 2")
         purchasesList.forEach { purchase ->
-            Log.d(TAG, "handlePurchase: 3")
-
             // Iterate and search for consumable product if any
             var isConsumable = false
             purchase.products.forEach inner@{
@@ -624,7 +620,6 @@ open class BillingRepository(context: Context) {
                     return@inner
                 }
             }
-            Log.d(TAG, "handlePurchase: 4")
 
             // true / false
             if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED) {
@@ -632,19 +627,15 @@ open class BillingRepository(context: Context) {
                 onPurchaseResultMain(false, ResultState.PURCHASING_FAILURE.message)
                 return@forEach
             }
-            Log.d(TAG, "handlePurchase: 5")
 
             // State = PURCHASE
             Result.setResultState(ResultState.PURCHASING_SUCCESSFULLY)
 
             if (purchase.isAcknowledged) {
                 onPurchaseResultMain(true, ResultState.PURCHASING_SUCCESSFULLY.message)
-                Log.d(TAG, "handlePurchase: 6")
             } else {
                 if (isConsumable) {
-                    Log.d(TAG, "handlePurchase: 7")
                     queryUtils.checkForAcknowledgementsAndConsumable(purchasesList) {
-                        Log.d(TAG, "handlePurchase: 9: $it")
                         if (it) {
                             Result.setResultState(ResultState.PURCHASE_CONSUME)
                             onPurchaseResultMain(true, ResultState.PURCHASE_CONSUME.message)
@@ -654,7 +645,6 @@ open class BillingRepository(context: Context) {
                         }
                     }
                 } else {
-                    Log.d(TAG, "handlePurchase: 8")
                     onPurchaseResultMain(true, ResultState.PURCHASING_SUCCESSFULLY.message)
                     queryUtils.checkForAcknowledgements(purchasesList)
                 }

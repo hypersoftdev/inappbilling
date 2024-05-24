@@ -604,15 +604,19 @@ open class BillingRepository(context: Context) {
         onPurchaseListener?.onPurchaseResult(false, Result.getResultState().message)
     }
 
-    private fun handlePurchase(purchasesList: List<Purchase>?) = CoroutineScope(Dispatchers.Main).launch {
+    private fun handlePurchase(purchasesList: List<Purchase>?) = CoroutineScope(Dispatchers.IO).launch {
+        Log.d(TAG, "handlePurchase: 1")
         if (purchasesList == null) {
             Result.setResultState(ResultState.PURCHASING_NO_PURCHASES_FOUND)
             onPurchaseResultMain(false, ResultState.PURCHASING_NO_PURCHASES_FOUND.message)
             return@launch
         }
 
-        // Iterate and search for consumable product if any
+        Log.d(TAG, "handlePurchase: 2")
         purchasesList.forEach { purchase ->
+            Log.d(TAG, "handlePurchase: 3")
+
+            // Iterate and search for consumable product if any
             var isConsumable = false
             purchase.products.forEach inner@{
                 if (consumableList.contains(it)) {
@@ -620,31 +624,40 @@ open class BillingRepository(context: Context) {
                     return@inner
                 }
             }
+            Log.d(TAG, "handlePurchase: 4")
 
-            when (purchase.purchaseState) {
-                Purchase.PurchaseState.PURCHASED -> {
-                    Result.setResultState(ResultState.PURCHASING_SUCCESSFULLY)
-                    if (isConsumable.not()) {
-                        onPurchaseResultMain(true, ResultState.PURCHASING_SUCCESSFULLY.message)
-                        return@forEach
-                    }
-                }
-
-                else -> {
-                    Result.setResultState(ResultState.PURCHASING_FAILURE)
-                    onPurchaseResultMain(false, ResultState.PURCHASING_FAILURE.message)
-                }
+            // true / false
+            if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED) {
+                Result.setResultState(ResultState.PURCHASING_FAILURE)
+                onPurchaseResultMain(false, ResultState.PURCHASING_FAILURE.message)
+                return@forEach
             }
-        }
+            Log.d(TAG, "handlePurchase: 5")
 
-        // if isConsumable = true
-        queryUtils.checkForAcknowledgementsAndConsumable(purchasesList) {
-            if (it) {
-                Result.setResultState(ResultState.PURCHASE_CONSUME)
-                onPurchaseResultMain(true, ResultState.PURCHASE_CONSUME.message)
+            // State = PURCHASE
+            Result.setResultState(ResultState.PURCHASING_SUCCESSFULLY)
+
+            if (purchase.isAcknowledged) {
+                onPurchaseResultMain(true, ResultState.PURCHASING_SUCCESSFULLY.message)
+                Log.d(TAG, "handlePurchase: 6")
             } else {
-                Result.setResultState(ResultState.PURCHASE_FAILURE)
-                onPurchaseResultMain(false, ResultState.PURCHASE_FAILURE.message)
+                if (isConsumable) {
+                    Log.d(TAG, "handlePurchase: 7")
+                    queryUtils.checkForAcknowledgementsAndConsumable(purchasesList) {
+                        Log.d(TAG, "handlePurchase: 9: $it")
+                        if (it) {
+                            Result.setResultState(ResultState.PURCHASE_CONSUME)
+                            onPurchaseResultMain(true, ResultState.PURCHASE_CONSUME.message)
+                        } else {
+                            Result.setResultState(ResultState.PURCHASE_FAILURE)
+                            onPurchaseResultMain(false, ResultState.PURCHASE_FAILURE.message)
+                        }
+                    }
+                } else {
+                    Log.d(TAG, "handlePurchase: 8")
+                    onPurchaseResultMain(true, ResultState.PURCHASING_SUCCESSFULLY.message)
+                    queryUtils.checkForAcknowledgements(purchasesList)
+                }
             }
         }
     }

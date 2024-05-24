@@ -244,6 +244,24 @@ internal class QueryUtils(private val billingClient: BillingClient) {
      *  otherwise user will get his/her cost back after 3 days.
      */
 
+    fun checkForAcknowledgements(purchases: List<Purchase>) {
+        val count = purchases.count { it.isAcknowledged.not() }
+        Log.i(TAG, "checkForAcknowledgements: $count purchase(s) needs to be acknowledge")
+
+        // Start acknowledging...
+        purchases.forEach { purchase ->
+            if (purchase.isAcknowledged.not()) {
+                val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder().setPurchaseToken(purchase.purchaseToken)
+                billingClient.acknowledgePurchase(acknowledgePurchaseParams.build()) { billingResult ->
+                    when (BillingResponse(billingResult.responseCode).isOk) {
+                        true -> Log.d(TAG, "checkForAcknowledgements: Payment has been successfully acknowledged for these products: ${purchase.products}")
+                        false -> Log.e(TAG, "checkForAcknowledgements: Payment has been failed to acknowledge for these products: ${purchase.products}")
+                    }
+                }
+            }
+        }
+    }
+
     fun checkForAcknowledgements(purchases: List<Purchase>, consumableList: List<String>) {
         val count = purchases.count { it.isAcknowledged.not() }
         Log.i(TAG, "checkForAcknowledgements: $count purchase(s) needs to be acknowledge")

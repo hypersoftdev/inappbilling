@@ -604,15 +604,15 @@ open class BillingRepository(context: Context) {
         onPurchaseListener?.onPurchaseResult(false, Result.getResultState().message)
     }
 
-    private fun handlePurchase(purchasesList: List<Purchase>?) = CoroutineScope(Dispatchers.Main).launch {
+    private fun handlePurchase(purchasesList: List<Purchase>?) = CoroutineScope(Dispatchers.IO).launch {
         if (purchasesList == null) {
             Result.setResultState(ResultState.PURCHASING_NO_PURCHASES_FOUND)
             onPurchaseResultMain(false, ResultState.PURCHASING_NO_PURCHASES_FOUND.message)
             return@launch
         }
 
-        // Iterate and search for consumable product if any
         purchasesList.forEach { purchase ->
+            // Iterate and search for consumable product if any
             var isConsumable = false
             purchase.products.forEach inner@{
                 if (consumableList.contains(it)) {
@@ -621,30 +621,33 @@ open class BillingRepository(context: Context) {
                 }
             }
 
-            when (purchase.purchaseState) {
-                Purchase.PurchaseState.PURCHASED -> {
-                    Result.setResultState(ResultState.PURCHASING_SUCCESSFULLY)
-                    if (isConsumable.not()) {
-                        onPurchaseResultMain(true, ResultState.PURCHASING_SUCCESSFULLY.message)
-                        return@forEach
-                    }
-                }
-
-                else -> {
-                    Result.setResultState(ResultState.PURCHASING_FAILURE)
-                    onPurchaseResultMain(false, ResultState.PURCHASING_FAILURE.message)
-                }
+            // true / false
+            if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED) {
+                Result.setResultState(ResultState.PURCHASING_FAILURE)
+                onPurchaseResultMain(false, ResultState.PURCHASING_FAILURE.message)
+                return@forEach
             }
-        }
 
-        // if isConsumable = true
-        queryUtils.checkForAcknowledgementsAndConsumable(purchasesList) {
-            if (it) {
-                Result.setResultState(ResultState.PURCHASE_CONSUME)
-                onPurchaseResultMain(true, ResultState.PURCHASE_CONSUME.message)
+            // State = PURCHASE
+            Result.setResultState(ResultState.PURCHASING_SUCCESSFULLY)
+
+            if (purchase.isAcknowledged) {
+                onPurchaseResultMain(true, ResultState.PURCHASING_SUCCESSFULLY.message)
             } else {
-                Result.setResultState(ResultState.PURCHASE_FAILURE)
-                onPurchaseResultMain(false, ResultState.PURCHASE_FAILURE.message)
+                if (isConsumable) {
+                    queryUtils.checkForAcknowledgementsAndConsumable(purchasesList) {
+                        if (it) {
+                            Result.setResultState(ResultState.PURCHASE_CONSUME)
+                            onPurchaseResultMain(true, ResultState.PURCHASE_CONSUME.message)
+                        } else {
+                            Result.setResultState(ResultState.PURCHASE_FAILURE)
+                            onPurchaseResultMain(false, ResultState.PURCHASE_FAILURE.message)
+                        }
+                    }
+                } else {
+                    onPurchaseResultMain(true, ResultState.PURCHASING_SUCCESSFULLY.message)
+                    queryUtils.checkForAcknowledgements(purchasesList)
+                }
             }
         }
     }

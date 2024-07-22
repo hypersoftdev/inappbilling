@@ -583,7 +583,7 @@ open class BillingRepository(context: Context) {
             response.isOk -> {
                 Result.setResultState(ResultState.PURCHASING_SUCCESSFULLY)
                 handlePurchase(purchasesList)
-                fetchPurchases()
+                //fetchPurchases()
                 return@PurchasesUpdatedListener
             }
 
@@ -630,22 +630,23 @@ open class BillingRepository(context: Context) {
 
             // State = PURCHASE
             Result.setResultState(ResultState.PURCHASING_SUCCESSFULLY)
+            onPurchaseResultMain(true, ResultState.PURCHASE_CONSUME.message)
 
             if (purchase.isAcknowledged) {
-                onPurchaseResultMain(true, ResultState.PURCHASING_SUCCESSFULLY.message)
+                //onPurchaseResultMain(true, ResultState.PURCHASING_SUCCESSFULLY.message)
             } else {
                 if (isConsumable) {
                     queryUtils.checkForAcknowledgementsAndConsumable(purchasesList) {
                         if (it) {
                             Result.setResultState(ResultState.PURCHASE_CONSUME)
-                            onPurchaseResultMain(true, ResultState.PURCHASE_CONSUME.message)
+                            //onPurchaseResultMain(true, ResultState.PURCHASE_CONSUME.message)
                         } else {
                             Result.setResultState(ResultState.PURCHASE_FAILURE)
-                            onPurchaseResultMain(false, ResultState.PURCHASE_FAILURE.message)
+                            //onPurchaseResultMain(false, ResultState.PURCHASE_FAILURE.message)
                         }
                     }
                 } else {
-                    onPurchaseResultMain(true, ResultState.PURCHASING_SUCCESSFULLY.message)
+                    //onPurchaseResultMain(true, ResultState.PURCHASING_SUCCESSFULLY.message)
                     queryUtils.checkForAcknowledgements(purchasesList)
                 }
             }

@@ -146,9 +146,17 @@ internal class QueryUtils(private val billingClient: BillingClient) {
     fun getTrialDay(subscriptionOfferDetailList: ProductDetails.SubscriptionOfferDetails): Int {
         val pricingPhase = getPricingOffer(subscriptionOfferDetailList)
         return when (pricingPhase?.billingPeriod) {
+            "P1D" -> 1
+            "P2D" -> 2
             "P3D" -> 3
+            "P4D" -> 4
             "P5D" -> 5
+            "P6D" -> 6
             "P7D" -> 7
+            "P1W" -> 7
+            "P2W" -> 14
+            "P3W" -> 21
+            "P4W" -> 28
             "P1M" -> 30
             else -> 0
         }
@@ -178,9 +186,17 @@ internal class QueryUtils(private val billingClient: BillingClient) {
 
         if (trialPricingPhase?.priceAmountMicros == 0L) {
             trialDays = when (trialPricingPhase.billingPeriod) {
+                "P1D" -> 1
+                "P2D" -> 2
                 "P3D" -> 3
+                "P4D" -> 4
                 "P5D" -> 5
+                "P6D" -> 6
                 "P7D" -> 7
+                "P1W" -> 7
+                "P2W" -> 14
+                "P3W" -> 21
+                "P4W" -> 28
                 "P1M" -> 30
                 else -> 0
             }

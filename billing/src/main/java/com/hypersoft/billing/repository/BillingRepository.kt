@@ -392,6 +392,8 @@ open class BillingRepository(context: Context) {
         val queryProductDetail = arrayListOf<QueryProductDetail>()
 
         productDetailsList.forEach { productDetails ->
+            Log.d(TAG, "BillingRepository: Each ProductDetails -> Query: $productDetailsList")
+
             when (productDetails.productType) {
                 BillingClient.ProductType.INAPP -> {
                     val productDetail = ProductDetail(

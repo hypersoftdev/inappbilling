@@ -16,10 +16,12 @@ import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryPurchasesParams
 import com.hypersoft.billing.BillingManager.Companion.TAG
 import com.hypersoft.billing.dataClasses.CompletePurchase
+import com.hypersoft.billing.dataClasses.PricingPhase
 import com.hypersoft.billing.dataClasses.ProductDetail
 import com.hypersoft.billing.dataClasses.ProductType
 import com.hypersoft.billing.dataClasses.PurchaseDetail
 import com.hypersoft.billing.dataClasses.QueryProductDetail
+import com.hypersoft.billing.enums.RecurringMode
 import com.hypersoft.billing.enums.ResultState
 import com.hypersoft.billing.extensions.toFormattedDate
 import com.hypersoft.billing.interfaces.OnPurchaseListener
@@ -396,16 +398,23 @@ open class BillingRepository(context: Context) {
 
             when (productDetails.productType) {
                 BillingClient.ProductType.INAPP -> {
+                    val pricingPhase = PricingPhase(
+                        planTitle = "",
+                        recurringMode = RecurringMode.ORIGINAL,
+                        price = productDetails.oneTimePurchaseOfferDetails?.formattedPrice.toString().removeSuffix(".00"),
+                        currencyCode = productDetails.oneTimePurchaseOfferDetails?.priceCurrencyCode.toString(),
+                        billingCycleCount = 0,
+                        billingPeriod = "",
+                        priceAmountMicros = productDetails.oneTimePurchaseOfferDetails?.priceAmountMicros ?: 0L,
+                        freeTrialPeriod = 0
+                    )
+
                     val productDetail = ProductDetail(
                         productId = productDetails.productId,
                         planId = "",
                         productTitle = productDetails.title,
-                        planTitle = "",
                         productType = ProductType.inapp,
-                        currencyCode = productDetails.oneTimePurchaseOfferDetails?.priceCurrencyCode.toString(),
-                        price = productDetails.oneTimePurchaseOfferDetails?.formattedPrice.toString().removeSuffix(".00"),
-                        priceAmountMicros = productDetails.oneTimePurchaseOfferDetails?.priceAmountMicros ?: 0L,
-                        billingPeriod = ""
+                        pricingDetails = listOf(pricingPhase)
                     )
                     _productDetailList.add(productDetail)
                     queryProductDetail.add(QueryProductDetail(productDetail, productDetails, null))
@@ -420,25 +429,38 @@ open class BillingRepository(context: Context) {
                                 return@tag
                             }
 
+                            val pricingPhaseList = arrayListOf<PricingPhase>()
+
+                            offer.pricingPhases.pricingPhaseList.forEach { pricingPhaseItem ->
+                                val pricingPhase = PricingPhase()
+                                if (pricingPhaseItem.formattedPrice.equals("Free", ignoreCase = true)) {
+                                    pricingPhase.recurringMode = RecurringMode.FREE
+                                    pricingPhase.freeTrialPeriod = queryUtils.getTrialDay(offer)
+                                    pricingPhase.billingCycleCount = 0
+                                } else if (pricingPhaseItem.recurrenceMode == 1) {
+                                    pricingPhase.recurringMode = RecurringMode.ORIGINAL
+                                    pricingPhase.freeTrialPeriod = 0
+                                    pricingPhase.billingCycleCount = 0
+                                } else if (pricingPhaseItem.recurrenceMode == 2) {
+                                    pricingPhase.recurringMode = RecurringMode.DISCOUNTED
+                                    pricingPhase.freeTrialPeriod = 0
+                                    pricingPhase.billingCycleCount = pricingPhaseItem.billingCycleCount
+                                }
+                                pricingPhase.planTitle = queryUtils.getPlanTitle(pricingPhaseItem.billingPeriod)
+                                pricingPhase.currencyCode = pricingPhaseItem.priceCurrencyCode
+                                pricingPhase.billingPeriod = pricingPhaseItem.billingPeriod
+                                pricingPhase.price = pricingPhaseItem.formattedPrice.removeSuffix(".00")
+                                pricingPhase.priceAmountMicros = pricingPhaseItem.priceAmountMicros
+                                pricingPhaseList.add(pricingPhase)
+                            }
+
                             val productDetail = ProductDetail().apply {
                                 productId = productDetails.productId
                                 planId = offer.basePlanId
                                 productTitle = productDetails.title
                                 productType = ProductType.subs
+                                pricingDetails = pricingPhaseList
                             }
-
-                            offer.pricingPhases.pricingPhaseList.forEach { pricingPhase ->
-                                if (pricingPhase.formattedPrice.equals("Free", ignoreCase = true)) {
-                                    productDetail.freeTrialDays = queryUtils.getTrialDay(offer)
-                                } else {
-                                    productDetail.planTitle = queryUtils.getPlanTitle(pricingPhase.billingPeriod)
-                                    productDetail.currencyCode = pricingPhase.priceCurrencyCode
-                                    productDetail.price = pricingPhase.formattedPrice.removeSuffix(".00")
-                                    productDetail.priceAmountMicros = pricingPhase.priceAmountMicros
-                                    productDetail.billingPeriod = pricingPhase.billingPeriod
-                                }
-                            }
-
                             _productDetailList.add(productDetail)
                             queryProductDetail.add(QueryProductDetail(productDetail, productDetails, offer))
                         }

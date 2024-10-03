@@ -9,49 +9,45 @@ package com.hypersoft.billing.dataClasses
  */
 
 /**
- * @param productId: Unique ID (Console's ID) for product
- * @param planId: Unique ID (Console's ID) for plan
- * @param productTitle: e.g. Gold Tier
- * @param planTitle: e.g. Weekly, Monthly, Yearly, etc
- * @param productType: e.g. InApp / Subs
- * @param currencyCode: e.g. USD, PKR, etc
- * @param price: e.g. Rs 750.00
- * @param priceAmountMicros: e.g. 750000000
- * @param freeTrialDays: e.g. 3, 5, 7, etc
- * @param billingPeriod
- * - Weekly: P1W (One week)
- * - Every 4 weeks: P4W (Four weeks)
- * - Monthly: P1M (One month)
- * - Every 2 months (Bimonthly): P2M (Two months)
- * - Every 3 months (Quarterly): P3M (Three months)
- * - Every 4 months: P4M (Four months)
- * - Every 6 months (Semiannually): P6M (Six months)
- * - Every 8 months: P8M (Eight months)
- * - Yearly: P1Y (One year)
+ * Data class representing the detailed information of a product and its associated pricing plans.
+ *
+ * @param productId: The unique identifier for the product, as defined in the console (e.g., Google Play Console).
+ * @param planId: The unique identifier for the subscription plan, as defined in the console.
+ * @param productTitle: The name or title of the product, e.g., "Gold Tier".
+ * @param productType: The type of product, either "InApp" (for in-app purchases) or "Subs" (for subscriptions).
+ * @param pricingDetails: A list of `PricingPhase` objects that contain pricing information for each phase of the product's billing cycles.
+ *
+ * Each `PricingPhase` contains:
+ * - price: The formatted price string, e.g., "Rs 750.00".
+ * - priceAmountMicros: The price of the subscription in micros (1,000,000 micros = 1 unit of currency).
+ * - currencyCode: ISO 4217 currency code, e.g., "USD" or "PKR".
+ * - planTitle: The title of the plan, e.g., "Weekly", "Monthly", "Yearly".
+ * - freeTrialPeriod: Number of days for the free trial, e.g., 3, 5, 7, etc.
+ * - billingPeriod: Duration of the billing period in ISO-8601 format:
+ *     - Weekly: "P1W" (One week)
+ *     - Every 4 weeks: "P4W" (Four weeks)
+ *     - Monthly: "P1M" (One month)
+ *     - Bimonthly: "P2M" (Two months)
+ *     - Quarterly: "P3M" (Three months)
+ *     - Every 4 months: "P4M" (Four months)
+ *     - Semiannually: "P6M" (Six months)
+ *     - Every 8 months: "P8M" (Eight months)
+ *     - Yearly: "P1Y" (One year)
  */
 
 data class ProductDetail(
     var productId: String,
     var planId: String,
     var productTitle: String,
-    var planTitle: String,
     var productType: ProductType,
-    var currencyCode: String,
-    var price: String,
-    var priceAmountMicros: Long = 0,
-    var freeTrialDays: Int = 0,
-    var billingPeriod: String,
+    var pricingDetails : List<PricingPhase>
+
 ) {
     constructor() : this(
         productId = "",
         planId = "",
         productTitle = "",
-        planTitle = "",
         productType = ProductType.subs,
-        currencyCode = "",
-        price = "",
-        priceAmountMicros = 0,
-        freeTrialDays = 0,
-        billingPeriod = "",
+        pricingDetails = listOf(),
     )
 }

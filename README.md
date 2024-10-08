@@ -1,4 +1,5 @@
 [![](https://jitpack.io/v/hypersoftdev/inappbilling.svg)](https://jitpack.io/#hypersoftdev/inappbilling)
+
 # inappbilling
 
 **inappbilling** is a [Google Play Billing](https://developer.android.com/google/play/billing/integrate) library that demonstrates how to implement in-app purchases and subscriptions in your Android application
@@ -8,6 +9,7 @@
 ### Step A: Add Maven Repository
 
 In your project-level **build.gradle** or **settings.gradle** file, add the JitPack repository:
+
 ```
 repositories {
     google()
@@ -19,6 +21,7 @@ repositories {
 ### Step B: Add Dependencies
 
 In your app-level **build.gradle** file, add the library dependency. Use the latest version: [![](https://jitpack.io/v/hypersoftdev/inappbilling.svg)](https://jitpack.io/#hypersoftdev/inappbilling)
+
 ```
 implementation 'com.github.hypersoftdev:inappbilling:x.x.x'
 ```
@@ -72,6 +75,7 @@ billingManager.initialize(
 )
 
 ```
+
 Access comprehensive details of the currently purchased item using the `PurchaseDetail` class:
 
 ```
@@ -119,7 +123,11 @@ billingManager.productDetailsLiveData.observe(viewLifecycleOwner) { productDetai
             }
         } else {
             when (productDetail.productId) {
-                "subs_product_id_1" -> if (productDetail.planId == "subs-plan-id-1") { /* Handle plan1 subscription */ }
+                "subs_product_id_1" -> if (productDetail.planId == "subs-plan-id-1") {
+                   val freeTrial = productDetail.pricingDetails.find { it.recurringMode == RecurringMode.FREE }
+                   val discounted = productDetail.pricingDetails.find { it.recurringMode == RecurringMode.DISCOUNTED }
+                   val original = productDetail.pricingDetails.find { it.recurringMode == RecurringMode.ORIGINAL }
+                 }
                 "subs_product_id_2" -> if (productDetail.planId == "subs-plan-id-2") { /* Handle plan2 subscription */ }
                 "subs_product_id_3" -> if (productDetail.planId == "subs-plan-id-3") { /* Handle plan3 subscription */ }
             }
@@ -127,19 +135,15 @@ billingManager.productDetailsLiveData.observe(viewLifecycleOwner) { productDetai
     }
 }
 ```
+
 Retrieve comprehensive details of the item using the `ProductDetail` class:
 
 ```
 @param productId: Unique ID (Console's ID) for product
 @param planId: Unique ID (Console's ID) for plan
 @param productTitle: e.g. Gold Tier
-@param planTitle: e.g. Weekly, Monthly, Yearly, etc
 @param productType: e.g. InApp / Subs
-@param currencyCode: e.g. USD, PKR, etc
-@param price: e.g. Rs 750.00
-@param priceAmountMicros: e.g. 750000000
-@param freeTrialDays: e.g. 3, 5, 7, etc
-@param billingPeriod
+@param pricingDetails: e.g. list of pricing containing price, currencyCode, planTitle, billingCycleCount. etc
     - Weekly: P1W (One week)
     - Every 4 weeks: P4W (Four weeks)
     - Monthly: P1M (One month)
@@ -154,14 +158,49 @@ data class ProductDetail(
     var productId: String,
     var planId: String,
     var productTitle: String,
-    var planTitle: String,
     var productType: ProductType,
-    var currencyCode: String,
+    var pricingDetails: List<PricingPhase>
+
+) {
+    constructor() : this(
+        productId = "",
+        planId = "",
+        productTitle = "",
+        productType = ProductType.subs,
+        pricingDetails = listOf(),
+    )
+}
+
+@param recurringMode: e.g. FREE, DISCOUNTED, ORIGINAL
+@param price: e.g. Rs 750.00
+@param currencyCode: e.g. USD, PKR, etc
+@param planTitle: e.g. Weekly, Monthly, Yearly, etc
+@param billingCycleCount: e.g. 1, 2, 3, etc
+@param billingPeriod: e.g. P1W, P1M, P1Y, etc
+@param priceAmountMicros: e.g. 750000000
+@param freeTrialPeriod: e.g. 3, 5, 7, etc
+
+data class PricingPhase(
+    var recurringMode: RecurringMode,
     var price: String,
-    var priceAmountMicros: Long = 0,
-    var freeTrialDays: Int = 0,
+    var currencyCode: String,
+    var planTitle: String,
+    var billingCycleCount: Int,
     var billingPeriod: String,
-)
+    var priceAmountMicros: Long,
+    var freeTrialPeriod: Int,
+) {
+    constructor() : this(
+        recurringMode = RecurringMode.ORIGINAL,
+        price = "",
+        currencyCode = "",
+        planTitle = "",
+        billingCycleCount = 0,
+        billingPeriod = "",
+        priceAmountMicros = 0,
+        freeTrialPeriod = 0,
+    )
+}
 ```
 
 ### Step 4: Make Purchases
@@ -220,6 +259,7 @@ billingManager.updateSubPurchase(
                 )
 
 ```
+
 ## Guidance
 
 ### Subscription Tags
@@ -241,7 +281,8 @@ To add products and plans on the Play Console, consider using the following reco
 
 #### Option 2
 
-##### Note: 
+##### Note:
+
 If you purchase a product and want to retrieve an old purchase from Google, it won't return the plan ID, making it impossible to identify which plan was purchased. To address this, you should save the purchase information on your server, including the product and plan IDs. This way, you can maintain a purchase list for future reference. Alternatively, you can use `Option 1`, where each product ID is associated with only one plan ID. This ensures that when you fetch a product ID, you can easily determine the corresponding plan that was purchased
 
 For Gold Subscription

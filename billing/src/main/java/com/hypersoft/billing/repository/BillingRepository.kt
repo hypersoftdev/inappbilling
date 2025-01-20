@@ -10,6 +10,7 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
+import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
@@ -27,6 +28,7 @@ import com.hypersoft.billing.extensions.toFormattedDate
 import com.hypersoft.billing.interfaces.OnPurchaseListener
 import com.hypersoft.billing.states.Result
 import com.hypersoft.billing.utils.QueryUtils
+import com.hypersoft.billing.utils.ValidationUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -48,12 +50,12 @@ open class BillingRepository(context: Context) {
     private val billingClient by lazy {
         BillingClient.newBuilder(context)
             .setListener(purchasesListener)
-            .enablePendingPurchases()
+            .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
             .build()
     }
 
     private val queryUtils: QueryUtils by lazy { QueryUtils(billingClient) }
-    private val validationUtils: com.hypersoft.billing.utils.ValidationUtils by lazy { com.hypersoft.billing.utils.ValidationUtils(billingClient) }
+    private val validationUtils: ValidationUtils by lazy { ValidationUtils(billingClient) }
 
     /**
      * @property _purchasesSharedFlow: Collect (observe) this, to get user's purchase list currently owns
@@ -230,8 +232,8 @@ open class BillingRepository(context: Context) {
      */
 
     protected fun fetchPurchases() {
-        // Clear lists
-        _purchases.clear()
+        // New List
+        var purchaseList = arrayListOf<Purchase>()
 
         // Determine product types to be fetched
         val hasInApp = userQueryList.any { it.first == BillingClient.ProductType.INAPP }
@@ -241,14 +243,14 @@ open class BillingRepository(context: Context) {
 
         // Query for product types to be fetched
         when {
-            hasBoth -> queryPurchases(BillingClient.ProductType.INAPP, true)
-            hasInApp -> queryPurchases(BillingClient.ProductType.INAPP, false)
-            hasSubs -> queryPurchases(BillingClient.ProductType.SUBS, false)
+            hasBoth -> queryPurchases(purchaseList, BillingClient.ProductType.INAPP, true)
+            hasInApp -> queryPurchases(purchaseList, BillingClient.ProductType.INAPP, false)
+            hasSubs -> queryPurchases(purchaseList, BillingClient.ProductType.SUBS, false)
             else -> processPurchases()
         }
     }
 
-    private fun queryPurchases(productType: String, hasBoth: Boolean) {
+    private fun queryPurchases(purchaseList: ArrayList<Purchase>, productType: String, hasBoth: Boolean) {
         when (productType) {
             BillingClient.ProductType.INAPP -> Result.setResultState(ResultState.CONSOLE_PURCHASE_PRODUCTS_INAPP_FETCHING)
             BillingClient.ProductType.SUBS -> Result.setResultState(ResultState.CONSOLE_PURCHASE_PRODUCTS_SUB_FETCHING)
@@ -259,7 +261,7 @@ open class BillingRepository(context: Context) {
             { billingResult, purchases ->
                 Log.i(TAG, "BillingRepository: $productType -> Purchases: $purchases")
                 if (BillingResponse(billingResult.responseCode).isOk) {
-                    _purchases.addAll(purchases)
+                    purchaseList.addAll(purchases)
                     when (productType) {
                         BillingClient.ProductType.INAPP -> Result.setResultState(ResultState.CONSOLE_PURCHASE_PRODUCTS_INAPP_FETCHING_SUCCESS)
                         BillingClient.ProductType.SUBS -> Result.setResultState(ResultState.CONSOLE_PURCHASE_PRODUCTS_SUB_FETCHING_SUCCESS)
@@ -272,9 +274,11 @@ open class BillingRepository(context: Context) {
                 }
 
                 if (productType == BillingClient.ProductType.INAPP && hasBoth) {
-                    queryPurchases(BillingClient.ProductType.SUBS, false)
+                    queryPurchases(purchaseList, BillingClient.ProductType.SUBS, false)
                     return@queryPurchasesAsync
                 }
+                _purchases.clear()
+                _purchases.addAll(purchaseList)
                 processPurchases()
             }
     }
@@ -607,7 +611,7 @@ open class BillingRepository(context: Context) {
             response.isOk -> {
                 Result.setResultState(ResultState.PURCHASING_SUCCESSFULLY)
                 handlePurchase(purchasesList)
-                //fetchPurchases()
+                fetchPurchases()
                 return@PurchasesUpdatedListener
             }
 

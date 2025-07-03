@@ -67,7 +67,7 @@ internal class QueryUtils(private val billingClient: BillingClient) {
                 if (BillingResponse(billingResult.responseCode).isOk) {
                     if (continuation.isActive) {
                         try {
-                            continuation.resume(productDetailsList)
+                            continuation.resume(productDetailsList.productDetailsList)
                         } catch (ignore: Exception) {
                         }
                     }

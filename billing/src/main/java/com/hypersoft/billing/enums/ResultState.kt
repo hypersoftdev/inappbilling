@@ -17,7 +17,7 @@ enum class ResultState(val message: String) {
     ACTIVITY_REFERENCE_NOT_FOUND("Activity reference is null"),
 
     // Connections
-    CONNECTION_INVALID("Billing is not ready, seems to be disconnected"),
+    CONNECTION_INVALID("Billing is not ready, seems to be disconnected. Try again in a moment"),
     CONNECTION_ESTABLISHING("Connecting to Google Play Console"),
     CONNECTION_ESTABLISHING_IN_PROGRESS("An attempt to connect to Google Play Console is already in progress."),
     CONNECTION_ALREADY_ESTABLISHED("Already connected to Google Play Console"),

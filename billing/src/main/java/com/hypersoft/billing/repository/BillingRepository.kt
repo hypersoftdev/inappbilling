@@ -538,6 +538,13 @@ open class BillingRepository(context: Context) {
             false -> listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(productDetails).setOfferToken(offerToken).build())
         }
 
+        if (billingClient.isReady.not()) {
+            Result.setResultState(ResultState.CONNECTION_INVALID)
+            onPurchaseListener?.onPurchaseResult(false, message = ResultState.CONNECTION_INVALID.message)
+            startConnection { _, _ -> }
+            return
+        }
+
         val flowParams = BillingFlowParams.newBuilder().setProductDetailsParamsList(paramsList).build()
         billingClient.launchBillingFlow(activity, flowParams)
         Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)
@@ -599,6 +606,13 @@ open class BillingRepository(context: Context) {
             .setProductDetailsParamsList(paramsList)
             .setSubscriptionUpdateParams(updateParams)
             .build()
+
+        if (billingClient.isReady.not()) {
+            Result.setResultState(ResultState.CONNECTION_INVALID)
+            onPurchaseListener.onPurchaseResult(false, message = ResultState.CONNECTION_INVALID.message)
+            startConnection { _, _ -> }
+            return
+        }
 
         billingClient.launchBillingFlow(activity!!, flowParams)
         Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)

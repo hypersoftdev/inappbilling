@@ -1,0 +1,116 @@
+package com.hypersoft.billing.asd.domain
+
+import com.android.billingclient.api.ProductDetails
+import com.android.billingclient.api.ProductDetails.PricingPhase
+import com.android.billingclient.api.ProductDetails.PricingPhases
+import com.android.billingclient.api.Purchase
+import com.hypersoft.billing.asd.data.repository.BillingRepository
+import com.hypersoft.billing.asd.entities.PurchaseDetail
+import com.hypersoft.billing.asd.enums.ProductType
+import com.hypersoft.billing.asd.states.BillingState
+import com.hypersoft.billing.asd.states.QueryResponse
+import com.hypersoft.billing.extensions.toFormattedDate
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.withContext
+
+/**
+ * Created by: Sohaib Ahmed
+ * Date: 7/4/2025
+ * <p>
+ * Links:
+ * - LinkedIn: <a href="https://linkedin.com/in/epegasus">Linkedin</a>
+ * - GitHub: <a href="https://github.com/epegasus">Github</a>
+ */
+
+internal class UseCaseQueryPurchases(private val repository: BillingRepository) {
+
+    private val mutex = Mutex()
+
+    /** Active subs + non‑consumed one‑time purchases (cache‑only). */
+    suspend fun queryPurchases(): QueryResponse<List<PurchaseDetail>> =
+        withContext(Dispatchers.Default) {
+
+            if (!repository.isBillingClientReady) {
+                repository.currentState = BillingState.CONNECTION_INVALID
+                return@withContext QueryResponse.Error("Play Billing not ready.")
+            }
+            if (!mutex.tryLock()) return@withContext QueryResponse.Loading
+
+            repository.currentState = BillingState.CONSOLE_PURCHASE_PROCESSING
+
+            val result = runCatching {
+                coroutineScope {
+
+                    /* ── 1. get raw purchases (parallel) ─────────────────── */
+                    val inAppAsync = async { repository.queryInAppPurchases() }
+                    val subsAsync = async { repository.querySubsPurchases() }
+
+                    val inApp = inAppAsync.await()
+                    val subs = subsAsync.await()
+
+                    /* ── 2. fetch product details (parallel) ─────────────── */
+                    val inAppIds = inApp.flatMap { it.products }
+                    val subsIds = subs.flatMap { it.products }
+
+                    val inAppPdAsync = async { repository.queryInAppProductDetails(inAppIds) }
+                    val subsPdAsync = async { repository.querySubsProductDetails(subsIds) }
+
+                    val inAppPd = inAppPdAsync.await().orEmpty()
+                    val subsPd = subsPdAsync.await().orEmpty()
+
+                    /* ── 3. map to domain objects ───────────────────────── */
+                    inApp.flatMap { it.toDomainList(inAppPd, ProductType.inapp) } +
+                            subs.flatMap { it.toDomainList(subsPd, ProductType.subs) }
+                }
+            }
+
+            mutex.unlock()
+
+            result.fold(
+                onSuccess = {
+                    repository.currentState = BillingState.CONSOLE_PURCHASE_COMPLETED
+                    QueryResponse.Success(it)
+                },
+                onFailure = {
+                    repository.currentState = BillingState.CONSOLE_PURCHASE_FAILED
+                    QueryResponse.Error(it.localizedMessage ?: "Unknown error")
+                }
+            )
+        }
+
+    /* ───────────────────── mapping helpers ───────────────────────────── */
+
+    private fun Purchase.toDomainList(details: List<ProductDetails>, type: ProductType): List<PurchaseDetail> = products.mapNotNull { id ->
+
+        val productDetails = details.firstOrNull { it.productId == id }
+        val offer = productDetails?.subscriptionOfferDetails?.firstOrNull()
+        val planTitle = offer?.pricingPhases?.originalPhase()?.billingPeriod.toPlanTitle()
+
+        PurchaseDetail(
+            productId = id,
+            planId = offer?.basePlanId,
+            productTitle = productDetails?.title,
+            planTitle = planTitle,
+            purchaseToken = purchaseToken,
+            productType = type,
+            purchaseTime = purchaseTime.toFormattedDate(),
+            purchaseTimeMillis = purchaseTime,
+            isAutoRenewing = isAutoRenewing,
+            isAcknowledged = isAcknowledged
+        )
+    }
+
+    /* PricingPhases helpers */
+    private fun PricingPhases.originalPhase(): PricingPhase? =
+        pricingPhaseList.firstOrNull { it.priceAmountMicros > 0 && it.billingPeriod != "P0D" }
+
+    private fun String?.toPlanTitle(): String = when (this) {
+        "P1W" -> "Weekly"; "P4W" -> "Four weeks"; "P1M" -> "Monthly"
+        "P2M" -> "2 months"; "P3M" -> "3 months"; "P4M" -> "4 months"
+        "P6M" -> "6 months"; "P8M" -> "8 months"; "P1Y" -> "Yearly"
+        else -> ""
+    }
+}

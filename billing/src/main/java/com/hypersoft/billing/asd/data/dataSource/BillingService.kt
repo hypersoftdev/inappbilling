@@ -1,0 +1,129 @@
+package com.hypersoft.billing.asd.data.dataSource
+
+import android.util.Log
+import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingClientStateListener
+import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.ProductDetails
+import com.android.billingclient.api.Purchase
+import com.android.billingclient.api.QueryProductDetailsParams
+import com.android.billingclient.api.QueryPurchasesParams
+import com.android.billingclient.api.queryProductDetails
+import com.android.billingclient.api.queryPurchasesAsync
+import com.hypersoft.billing.asd.BillingManager.Companion.TAG
+import com.hypersoft.billing.asd.states.BillingState
+
+/**
+ * Created by: Sohaib Ahmed
+ * Date: 7/3/2025
+ * <p>
+ * Links:
+ * - LinkedIn: <a href="https://linkedin.com/in/epegasus">Linkedin</a>
+ * - GitHub: <a href="https://github.com/epegasus">Github</a>
+ */
+
+internal class BillingService(private val billingClient: BillingClient) {
+
+    private val inApp = BillingClient.ProductType.INAPP
+    private val subs = BillingClient.ProductType.SUBS
+
+    val isBillingClientReady = billingClient.isReady
+
+    var currentState: BillingState = BillingState.NONE
+        internal set(value) {
+            field = value
+            Log.d(TAG, "BillingService: updateState: $value")
+        }
+
+    fun startConnection(onResult: (Boolean, String?) -> Unit) {
+        currentState = BillingState.CONNECTING
+
+        billingClient.startConnection(object : BillingClientStateListener {
+            override fun onBillingServiceDisconnected() {
+                currentState = BillingState.DISCONNECTED
+                onResult(false, null)
+            }
+
+            override fun onBillingSetupFinished(billingResult: BillingResult) {
+                val isSuccess = billingResult.responseCode == BillingClient.BillingResponseCode.OK
+                currentState = when (isSuccess) {
+                    true -> BillingState.CONNECTED
+                    false -> BillingState.CONNECT_FAILED
+                }
+                onResult(isSuccess, billingResult.debugMessage)
+            }
+        })
+    }
+
+    suspend fun queryInAppPurchases(): List<Purchase> {
+        currentState = BillingState.FETCHING_INAPP_PURCHASES
+
+        val params = QueryPurchasesParams.newBuilder().setProductType(inApp).build()
+        val result = billingClient.queryPurchasesAsync(params)
+
+        val isSuccess = result.billingResult.responseCode == BillingClient.BillingResponseCode.OK
+        currentState = when (isSuccess) {
+            true -> BillingState.FETCHING_INAPP_PURCHASES_SUCCESS
+            false -> BillingState.FETCHING_INAPP_PURCHASES_FAILED
+        }
+
+        Log.i(TAG, "BillingService: queryInAppPurchases: productType = $inApp, PurchaseList: ${result.purchasesList}")
+        return result.purchasesList
+    }
+
+    suspend fun querySubsPurchases(): List<Purchase> {
+        currentState = BillingState.FETCHING_SUBSCRIPTION_PURCHASES
+
+        val params = QueryPurchasesParams.newBuilder().setProductType(subs).build()
+        val result = billingClient.queryPurchasesAsync(params)
+
+        val isSuccess = result.billingResult.responseCode == BillingClient.BillingResponseCode.OK
+        currentState = when (isSuccess) {
+            true -> BillingState.FETCHING_SUBSCRIPTION_PURCHASES_SUCCESS
+            false -> BillingState.FETCHING_SUBSCRIPTION_PURCHASES_FAILED
+        }
+
+        Log.i(TAG, "BillingService: querySubsPurchases: productType = $subs, PurchaseList: ${result.purchasesList}")
+        return result.purchasesList
+    }
+
+    suspend fun queryInAppProductDetails(productIds: List<String>): List<ProductDetails>? {
+        currentState = BillingState.FETCHING_INAPP_PRODUCTS
+
+        val productList = productIds.map { productId ->
+            QueryProductDetailsParams.Product.newBuilder().setProductId(productId).setProductType(inApp).build()
+        }
+
+        val params = QueryProductDetailsParams.newBuilder().setProductList(productList)
+        val result = billingClient.queryProductDetails(params.build())
+
+        val isSuccess = result.billingResult.responseCode == BillingClient.BillingResponseCode.OK
+        currentState = when (isSuccess) {
+            true -> BillingState.FETCHING_INAPP_PRODUCTS_SUCCESS
+            false -> BillingState.FETCHING_INAPP_PRODUCTS_FAILED
+        }
+
+        Log.i(TAG, "BillingService: queryInAppProductDetails: productType = $inApp, ProductDetailsList: ${result.productDetailsList}")
+        return result.productDetailsList
+    }
+
+    suspend fun querySubsProductDetails(productIds: List<String>): List<ProductDetails>? {
+        currentState = BillingState.FETCHING_SUBSCRIPTION_PRODUCTS
+
+        val productList = productIds.map { productId ->
+            QueryProductDetailsParams.Product.newBuilder().setProductId(productId).setProductType(subs).build()
+        }
+
+        val params = QueryProductDetailsParams.newBuilder().setProductList(productList)
+        val result = billingClient.queryProductDetails(params.build())
+
+        val isSuccess = result.billingResult.responseCode == BillingClient.BillingResponseCode.OK
+        currentState = when (isSuccess) {
+            true -> BillingState.FETCHING_SUBSCRIPTION_PRODUCTS_SUCCESS
+            false -> BillingState.FETCHING_SUBSCRIPTION_PRODUCTS_FAILED
+        }
+
+        Log.i(TAG, "BillingService: querySubsProductDetails: productType = $subs, ProductDetailsList: ${result.productDetailsList}")
+        return result.productDetailsList
+    }
+}

@@ -1,13 +1,13 @@
-package com.hypersoft.billing.asd.domain
+package com.hypersoft.billing.domain
 
 import com.android.billingclient.api.ProductDetails
-import com.hypersoft.billing.asd.data.repository.BillingRepository
-import com.hypersoft.billing.asd.data.entities.product.PricingPhase
-import com.hypersoft.billing.asd.data.entities.product.ProductDetail
-import com.hypersoft.billing.asd.data.entities.product.RecurringMode
-import com.hypersoft.billing.asd.presentation.enums.ProductType
-import com.hypersoft.billing.asd.presentation.states.BillingState
-import com.hypersoft.billing.asd.presentation.states.QueryResponse
+import com.hypersoft.billing.data.repository.BillingRepository
+import com.hypersoft.billing.data.entities.product.PricingPhase
+import com.hypersoft.billing.data.entities.product.ProductDetail
+import com.hypersoft.billing.data.entities.product.RecurringMode
+import com.hypersoft.billing.presentation.enums.ProductType
+import com.hypersoft.billing.presentation.states.BillingState
+import com.hypersoft.billing.presentation.states.QueryResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope

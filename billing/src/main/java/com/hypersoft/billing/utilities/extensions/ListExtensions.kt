@@ -1,4 +1,4 @@
-package com.hypersoft.billing.asd.utilities.extensions
+package com.hypersoft.billing.utilities.extensions
 
 /**
  * Created by: Sohaib Ahmed

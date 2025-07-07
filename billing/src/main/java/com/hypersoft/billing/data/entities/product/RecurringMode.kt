@@ -1,4 +1,4 @@
-package com.hypersoft.billing.asd.data.entities.product
+package com.hypersoft.billing.data.entities.product
 
 /**
  * Created by: Sohaib Ahmed

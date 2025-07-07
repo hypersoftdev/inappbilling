@@ -1,4 +1,4 @@
-package com.hypersoft.billing.asd.utilities.extensions
+package com.hypersoft.billing.utilities.extensions
 
 import com.android.billingclient.api.ProductDetails.PricingPhase
 import com.android.billingclient.api.ProductDetails.PricingPhases

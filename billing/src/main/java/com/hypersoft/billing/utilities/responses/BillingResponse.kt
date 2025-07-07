@@ -1,4 +1,4 @@
-package com.hypersoft.billing.asd.utilities.responses
+package com.hypersoft.billing.utilities.responses
 
 import com.android.billingclient.api.BillingClient
 

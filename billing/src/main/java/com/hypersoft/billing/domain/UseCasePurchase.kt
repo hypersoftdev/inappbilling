@@ -1,13 +1,13 @@
-package com.hypersoft.billing.asd.domain
+package com.hypersoft.billing.domain
 
 import android.app.Activity
 import android.util.Log
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.Purchase
-import com.hypersoft.billing.asd.BillingManager.Companion.TAG
-import com.hypersoft.billing.asd.data.repository.BillingRepository
-import com.hypersoft.billing.asd.presentation.states.BillingState
-import com.hypersoft.billing.asd.presentation.states.QueryResponse
+import com.hypersoft.billing.data.repository.BillingRepository
+import com.hypersoft.billing.presentation.states.BillingState
+import com.hypersoft.billing.presentation.states.QueryResponse
+import com.hypersoft.billing.utilities.constants.Constants.TAG
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

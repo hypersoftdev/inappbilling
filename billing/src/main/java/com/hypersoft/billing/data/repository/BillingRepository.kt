@@ -1,10 +1,10 @@
-package com.hypersoft.billing.asd.data.repository
+package com.hypersoft.billing.data.repository
 
 import android.app.Activity
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.Purchase
-import com.hypersoft.billing.asd.data.dataSource.BillingService
-import com.hypersoft.billing.asd.presentation.states.BillingState
+import com.hypersoft.billing.data.dataSource.BillingService
+import com.hypersoft.billing.presentation.states.BillingState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

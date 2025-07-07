@@ -1,4 +1,4 @@
-package com.hypersoft.billing.asd.presentation.interfaces
+package com.hypersoft.billing.presentation.interfaces
 
 /**
  * Created by: Sohaib Ahmed

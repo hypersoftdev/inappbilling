@@ -1,7 +1,7 @@
-package com.hypersoft.billing.asd.domain
+package com.hypersoft.billing.domain
 
-import com.hypersoft.billing.asd.data.repository.BillingRepository
-import com.hypersoft.billing.asd.presentation.states.BillingState
+import com.hypersoft.billing.data.repository.BillingRepository
+import com.hypersoft.billing.presentation.states.BillingState
 
 /**
  * Created by: Sohaib Ahmed

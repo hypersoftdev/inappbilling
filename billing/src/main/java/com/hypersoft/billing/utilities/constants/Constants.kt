@@ -1,4 +1,4 @@
-package com.hypersoft.billing.asd.utilities.constants
+package com.hypersoft.billing.utilities.constants
 
 /**
  * Created by: Sohaib Ahmed

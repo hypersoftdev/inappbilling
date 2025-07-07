@@ -1,6 +1,6 @@
-package com.hypersoft.billing.asd.data.entities.purchase
+package com.hypersoft.billing.data.entities.purchase
 
-import com.hypersoft.billing.asd.presentation.enums.ProductType
+import com.hypersoft.billing.presentation.enums.ProductType
 
 /**
  * Created by: Sohaib Ahmed

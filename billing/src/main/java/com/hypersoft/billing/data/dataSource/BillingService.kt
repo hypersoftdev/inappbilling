@@ -1,4 +1,4 @@
-package com.hypersoft.billing.asd.data.dataSource
+package com.hypersoft.billing.data.dataSource
 
 import android.app.Activity
 import android.util.Log
@@ -14,9 +14,9 @@ import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.queryProductDetails
 import com.android.billingclient.api.queryPurchasesAsync
-import com.hypersoft.billing.asd.BillingManager.Companion.TAG
-import com.hypersoft.billing.asd.presentation.states.BillingState
-import com.hypersoft.billing.repository.BillingResponse
+import com.hypersoft.billing.presentation.states.BillingState
+import com.hypersoft.billing.utilities.constants.Constants.TAG
+import com.hypersoft.billing.utilities.responses.BillingResponse
 
 /**
  * Created by: Sohaib Ahmed
@@ -68,8 +68,7 @@ internal class BillingService(private val billingClient: BillingClient) {
         val params = QueryPurchasesParams.newBuilder().setProductType(inApp).build()
         val result = billingClient.queryPurchasesAsync(params)
 
-        val isSuccess = result.billingResult.responseCode == BillingClient.BillingResponseCode.OK
-        currentState = when (isSuccess) {
+        currentState = when (BillingResponse(result.billingResult.responseCode).isOk) {
             true -> BillingState.FETCHING_INAPP_PURCHASES_SUCCESS
             false -> BillingState.FETCHING_INAPP_PURCHASES_FAILED
         }
@@ -84,8 +83,7 @@ internal class BillingService(private val billingClient: BillingClient) {
         val params = QueryPurchasesParams.newBuilder().setProductType(subs).build()
         val result = billingClient.queryPurchasesAsync(params)
 
-        val isSuccess = result.billingResult.responseCode == BillingClient.BillingResponseCode.OK
-        currentState = when (isSuccess) {
+        currentState = when (BillingResponse(result.billingResult.responseCode).isOk) {
             true -> BillingState.FETCHING_SUBSCRIPTION_PURCHASES_SUCCESS
             false -> BillingState.FETCHING_SUBSCRIPTION_PURCHASES_FAILED
         }
@@ -106,8 +104,7 @@ internal class BillingService(private val billingClient: BillingClient) {
         val params = QueryProductDetailsParams.newBuilder().setProductList(productList)
         val result = billingClient.queryProductDetails(params.build())
 
-        val isSuccess = result.billingResult.responseCode == BillingClient.BillingResponseCode.OK
-        currentState = when (isSuccess) {
+        currentState = when (BillingResponse(result.billingResult.responseCode).isOk) {
             true -> BillingState.FETCHING_INAPP_PRODUCTS_SUCCESS
             false -> BillingState.FETCHING_INAPP_PRODUCTS_FAILED
         }
@@ -126,8 +123,7 @@ internal class BillingService(private val billingClient: BillingClient) {
         val params = QueryProductDetailsParams.newBuilder().setProductList(productList)
         val result = billingClient.queryProductDetails(params.build())
 
-        val isSuccess = result.billingResult.responseCode == BillingClient.BillingResponseCode.OK
-        currentState = when (isSuccess) {
+        currentState = when (BillingResponse(result.billingResult.responseCode).isOk) {
             true -> BillingState.FETCHING_SUBSCRIPTION_PRODUCTS_SUCCESS
             false -> BillingState.FETCHING_SUBSCRIPTION_PRODUCTS_FAILED
         }

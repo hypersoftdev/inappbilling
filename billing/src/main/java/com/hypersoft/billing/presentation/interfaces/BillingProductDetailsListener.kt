@@ -1,6 +1,6 @@
-package com.hypersoft.billing.asd.presentation.interfaces
+package com.hypersoft.billing.presentation.interfaces
 
-import com.hypersoft.billing.asd.data.entities.product.ProductDetail
+import com.hypersoft.billing.data.entities.product.ProductDetail
 
 /**
  * Created by: Sohaib Ahmed

@@ -1,6 +1,7 @@
 package com.hypersoft.billing.asd.data.dataSource
 
 import android.util.Log
+import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
@@ -12,6 +13,7 @@ import com.android.billingclient.api.queryProductDetails
 import com.android.billingclient.api.queryPurchasesAsync
 import com.hypersoft.billing.asd.BillingManager.Companion.TAG
 import com.hypersoft.billing.asd.states.BillingState
+import com.hypersoft.billing.repository.BillingResponse
 
 /**
  * Created by: Sohaib Ahmed
@@ -55,6 +57,8 @@ internal class BillingService(private val billingClient: BillingClient) {
         })
     }
 
+    /* ----------------------------------- Purchases ----------------------------------- */
+
     suspend fun queryInAppPurchases(): List<Purchase> {
         currentState = BillingState.FETCHING_INAPP_PURCHASES
 
@@ -67,7 +71,7 @@ internal class BillingService(private val billingClient: BillingClient) {
             false -> BillingState.FETCHING_INAPP_PURCHASES_FAILED
         }
 
-        Log.i(TAG, "BillingService: queryInAppPurchases: productType = $inApp, PurchaseList: ${result.purchasesList}")
+        Log.i(TAG, "BillingService: queryInAppPurchases: productType = $inApp, PurchaseList: ${result.purchasesList}, Error: ${result.billingResult.debugMessage}")
         return result.purchasesList
     }
 
@@ -83,9 +87,11 @@ internal class BillingService(private val billingClient: BillingClient) {
             false -> BillingState.FETCHING_SUBSCRIPTION_PURCHASES_FAILED
         }
 
-        Log.i(TAG, "BillingService: querySubsPurchases: productType = $subs, PurchaseList: ${result.purchasesList}")
+        Log.i(TAG, "BillingService: querySubsPurchases: productType = $subs, PurchaseList: ${result.purchasesList}, Error: ${result.billingResult.debugMessage}")
         return result.purchasesList
     }
+
+    /* ----------------------------------- Products ----------------------------------- */
 
     suspend fun queryInAppProductDetails(productIds: List<String>): List<ProductDetails>? {
         currentState = BillingState.FETCHING_INAPP_PRODUCTS
@@ -103,7 +109,7 @@ internal class BillingService(private val billingClient: BillingClient) {
             false -> BillingState.FETCHING_INAPP_PRODUCTS_FAILED
         }
 
-        Log.i(TAG, "BillingService: queryInAppProductDetails: productType = $inApp, ProductDetailsList: ${result.productDetailsList}")
+        Log.i(TAG, "BillingService: queryInAppProductDetails: productType = $inApp, ProductDetailsList: ${result.productDetailsList}, Error: ${result.billingResult.debugMessage}")
         return result.productDetailsList
     }
 
@@ -123,7 +129,21 @@ internal class BillingService(private val billingClient: BillingClient) {
             false -> BillingState.FETCHING_SUBSCRIPTION_PRODUCTS_FAILED
         }
 
-        Log.i(TAG, "BillingService: querySubsProductDetails: productType = $subs, ProductDetailsList: ${result.productDetailsList}")
+        Log.i(TAG, "BillingService: querySubsProductDetails: productType = $subs, ProductDetailsList: ${result.productDetailsList}, Error: ${result.billingResult.debugMessage}")
         return result.productDetailsList
+    }
+
+    /* ------------------------------- Acknowledgements ------------------------------- */
+
+    fun acknowledgePurchases(purchases: List<Purchase>) {
+        purchases.forEach { purchase ->
+            val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder().setPurchaseToken(purchase.purchaseToken)
+            billingClient.acknowledgePurchase(acknowledgePurchaseParams.build()) { billingResult ->
+                when (BillingResponse(billingResult.responseCode).isOk) {
+                    true -> Log.d(TAG, "BillingService: checkForAcknowledgements: Payment has been successfully acknowledged for these products: ${purchase.products}")
+                    false -> Log.e(TAG, "BillingService: checkForAcknowledgements: Payment has been failed to acknowledge for these products: ${purchase.products}")
+                }
+            }
+        }
     }
 }

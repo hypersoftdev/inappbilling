@@ -52,6 +52,11 @@ enum class BillingState(val message: String) {
     FETCHING_SUBSCRIPTION_PRODUCTS_SUCCESS("Subs -> Successfully fetched Subscription products from Google Play Console."),
 
 
+    ACKNOWLEDGE_PURCHASE("Acknowledging purchases"),
+    ACKNOWLEDGE_PURCHASE_SUCCESS("Successfully acknowledged purchases"),
+    ACKNOWLEDGE_PURCHASE_FAILURE("Failed to acknowledged purchases"),
+
+
 
 
     /* ------------------------------------------------------ New ------------------------------------------------------ */

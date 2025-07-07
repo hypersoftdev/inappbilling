@@ -56,13 +56,21 @@ internal class UseCaseQueryProducts(private val repository: BillingRepository) {
             coroutineScope {
 
                 /* Fire Play queries in parallel */
-                val inAppNonAsync = async { repository.queryInAppProductDetails(nonConsumableIds) }
-                val inAppConAsync = async { repository.queryInAppProductDetails(consumableIds) }
-                val subAsync = async { repository.querySubsProductDetails(subscriptionIds) }
+                val inAppNonDeferred = nonConsumableIds
+                    .takeIf { it.isNotEmpty() }
+                    ?.let { async { repository.queryInAppProductDetails(it) } }
 
-                val inAppNon = inAppNonAsync.await().orEmpty()
-                val inAppCon = inAppConAsync.await().orEmpty()
-                val subs = subAsync.await().orEmpty()
+                val inAppConDeferred = consumableIds
+                    .takeIf { it.isNotEmpty() }
+                    ?.let { async { repository.queryInAppProductDetails(it) } }
+
+                val subDeferred = subscriptionIds
+                    .takeIf { it.isNotEmpty() }
+                    ?.let { async { repository.querySubsProductDetails(it) } }
+
+                val inAppNon = inAppNonDeferred?.await().orEmpty()
+                val inAppCon = inAppConDeferred?.await().orEmpty()
+                val subs     = subDeferred?.await().orEmpty()
 
                 inAppNon.map { it.toDomain(ProductType.inapp) } +
                         inAppCon.map { it.toDomain(ProductType.inapp) } +

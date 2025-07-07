@@ -1,15 +1,16 @@
-package com.hypersoft.billing.extensions
+package com.hypersoft.billing.utilities.extensions
 
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 /**
- * @Author: SOHAIB AHMED
- * @Date: 22/02/2024
- * @Accounts
- *      -> https://github.com/epegasus
- *      -> https://stackoverflow.com/users/20440272/sohaib-ahmed
+ * Created by: Sohaib Ahmed
+ * Date: 7/4/2025
+ * <p>
+ * Links:
+ * - LinkedIn: <a href="https://linkedin.com/in/epegasus">Linkedin</a>
+ * - GitHub: <a href="https://github.com/epegasus">Github</a>
  */
 
 internal fun Long.toFormattedDate(pattern: String = "MMM dd, yyyy", locale: Locale = Locale.getDefault()): String {

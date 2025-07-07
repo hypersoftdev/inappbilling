@@ -3,12 +3,14 @@ package com.hypersoft.inappbilling
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.hypersoft.billing.BillingManager
-import com.hypersoft.billing.dataClasses.PurchaseDetail
-import com.hypersoft.billing.interfaces.BillingListener
-import com.hypersoft.billing.interfaces.OnPurchaseListener
+import com.hypersoft.billing.data.entities.product.ProductDetail
+import com.hypersoft.billing.data.entities.purchase.PurchaseDetail
+import com.hypersoft.billing.presentation.interfaces.BillingConnectionListener
+import com.hypersoft.billing.presentation.interfaces.BillingProductDetailsListener
+import com.hypersoft.billing.presentation.interfaces.BillingPurchaseHistoryListener
+import com.hypersoft.billing.presentation.interfaces.BillingPurchaseListener
 
 const val TAG = "MyTag"
 
@@ -21,12 +23,11 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         initBilling()
-        initObserver()
 
         findViewById<Button>(R.id.btn_purchase).setOnClickListener { onPurchaseClick() }
     }
 
-    /* -------------------------------------------------- New Way -------------------------------------------------- */
+    /* -------------------------------------------------- Way -------------------------------------------------- */
 
     /**
      *  Suppose there's been a subscription structure as follow: - ProductID, -- PlanID
@@ -53,71 +54,72 @@ class MainActivity : AppCompatActivity() {
      */
 
     private fun initBilling() {
-        val productInAppConsumable = when (BuildConfig.DEBUG) {
-            true -> listOf("test")
-            false -> listOf("abc", "def")
-        }
-        val productInAppNonConsumable = when (BuildConfig.DEBUG) {
-            true -> listOf(billingManager.getDebugProductIDList())
-            false -> listOf(packageName)
-        }
-
-        billingManager.initialize(
-            productInAppConsumable = productInAppConsumable,
-            productInAppNonConsumable = productInAppNonConsumable,
-            productSubscriptions = listOf("Bronze", "Silver", "Gold"),
-            billingListener = billingListener
-        )
+        billingManager
+            .setNonConsumables(emptyList())
+            .setConsumables(emptyList())
+            .setSubscriptions(emptyList())
+            .setListener(object : BillingConnectionListener {
+                override fun onBillingClientConnected(isSuccess: Boolean, message: String) {
+                    Log.d(TAG, "onBillingClientConnected: isSuccess: $isSuccess, message: $message")
+                    fetchData(billingManager)
+                }
+            })
+            .startConnection()
     }
 
-    private val billingListener = object : BillingListener {
-        override fun onConnectionResult(isSuccess: Boolean, message: String) {
-            Log.d(TAG, "onConnectionResult: isSuccess: $isSuccess, message: $message")
-            if (!isSuccess) {
-                proceedApp()
+    private fun fetchData(billingManager: BillingManager) {
+        billingManager.fetchPurchaseHistory(object : BillingPurchaseHistoryListener {
+            override fun onError(message: String) {
+                Log.e(TAG, "fetchPurchaseHistory: Error: $message")
             }
-        }
 
-        override fun purchasesResult(purchaseDetailList: List<PurchaseDetail>) {
-            Log.d(TAG, "onConnectionResult: purchaseDetailList: $purchaseDetailList")
-            //purchaseDetailList[0].productType
-            proceedApp()
-        }
-    }
-
-    private fun initObserver() {
-        billingManager.productDetailsLiveData.observe(this) { productDetailList ->
-            Log.d(TAG, "initNewObserver: --------------------------------------")
-            productDetailList.forEach { productDetail ->
-                Log.d(TAG, "---: $productDetail")
+            override fun onSuccess(purchaseDetails: List<PurchaseDetail>) {
+                Log.d(TAG, "fetchPurchaseHistory: onSuccess: $purchaseDetails")
             }
-        }
-    }
+        })
 
-    private fun proceedApp() {
-        // your code here...
+        billingManager.fetchProductDetails(object : BillingProductDetailsListener {
+            override fun onError(message: String) {
+                Log.e(TAG, "fetchProductDetails: Error: $message")
+            }
+
+            override fun onSuccess(productDetails: List<ProductDetail>) {
+                Log.d(TAG, "fetchProductDetails: onSuccess: $productDetails")
+                productDetails.forEach {
+                    //Log.d(TAG, "fetchProductDetails: onSuccess: productDetail: $it")
+                }
+            }
+        })
+
+        billingManager.getProductDetail("", "", object : BillingProductDetailsListener {
+            override fun onError(message: String) {
+                Log.e(TAG, "getProductDetail: Error: $message")
+            }
+
+            override fun onSuccess(productDetails: List<ProductDetail>) {
+                Log.d(TAG, "fetchProductDetail: onSuccess: $productDetails")
+                productDetails.forEach {
+                    Log.d(TAG, "fetchProductDetail: onSuccess: productDetail: $it")
+                }
+            }
+        })
     }
 
     private fun onPurchaseClick() {
         // In-App
-        billingManager.makeInAppPurchase(this, "test", onPurchaseListener)
+        billingManager.purchaseInApp(this, "android.test.purchased", purchaseListener)
 
         // Subscription
-        //billingManager.makeSubPurchase(this, "product_abc", "plan_abc", onPurchaseListener)
+        //billingManager.purchaseSubs(this, APP_SUB_WEEKLY, SUB_PLAN_WEEKLY, purchaseListener)
     }
 
-    private val onPurchaseListener = object : OnPurchaseListener {
-        override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
-            showMessage(message)
+    private val purchaseListener = object : BillingPurchaseListener {
+        override fun onPurchaseResult(message: String) {
+            Log.d(TAG, "purchaseListener: onPurchaseResult: message: $message")
         }
-    }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        billingManager.destroyBilling()
-    }
-
-    private fun showMessage(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        override fun onError(message: String) {
+            Log.e(TAG, "purchaseListener: onError: message: $message")
+        }
     }
 }

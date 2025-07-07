@@ -30,6 +30,7 @@ internal class UseCaseQueryProducts(private val repository: BillingRepository) {
     private val productDetailList: List<ProductDetail> get() = _productDetailList.toList()
 
     private val mutex = Mutex()
+    private var isQueried = false
 
     suspend fun queryProducts(
         nonConsumableIds: List<String>,
@@ -51,6 +52,7 @@ internal class UseCaseQueryProducts(private val repository: BillingRepository) {
         /* ─── Ensure single flight using mutex ───────── */
         if (!mutex.tryLock()) return@withContext QueryResponse.Loading
         repository.currentState = BillingState.FETCHING_PRODUCTS
+        isQueried = true
 
         val result = runCatching {
             coroutineScope {
@@ -70,7 +72,7 @@ internal class UseCaseQueryProducts(private val repository: BillingRepository) {
 
                 val inAppNon = inAppNonDeferred?.await().orEmpty()
                 val inAppCon = inAppConDeferred?.await().orEmpty()
-                val subs     = subDeferred?.await().orEmpty()
+                val subs = subDeferred?.await().orEmpty()
 
                 inAppNon.map { it.toDomain(ProductType.inapp) } +
                         inAppCon.map { it.toDomain(ProductType.inapp) } +
@@ -97,10 +99,18 @@ internal class UseCaseQueryProducts(private val repository: BillingRepository) {
         response
     }
 
-    suspend fun queryProducts(productId: String, planId: String): QueryResponse<List<ProductDetail>> = withContext(Dispatchers.Default) {
-        // Wait for any ongoing fetch to finish, then read atomically
+    suspend fun queryProducts(productId: String, planId: String?): QueryResponse<List<ProductDetail>> = withContext(Dispatchers.Default) {
+
+        if (!isQueried) {
+            return@withContext QueryResponse.Error("Product details haven’t been fetched yet. Call fetchProductDetails() first.")
+        }
+
         mutex.withLock {
-            val found = productDetailList.firstOrNull { it.productId == productId && it.planId == planId }
+            val found = productDetailList.firstOrNull { detail ->
+                detail.productId == productId &&
+                        (planId == null || detail.planId == planId)
+            }
+
             return@withLock when (found) {
                 null -> QueryResponse.Error("Product not found")
                 else -> QueryResponse.Success(listOf(found))

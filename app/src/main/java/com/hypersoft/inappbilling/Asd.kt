@@ -2,6 +2,7 @@ package com.hypersoft.inappbilling
 
 import android.os.Bundle
 import android.util.Log
+import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.hypersoft.billing.asd.BillingManager
@@ -31,15 +32,18 @@ class Asd : AppCompatActivity() {
         APP_SUB_WEEKLY, APP_SUB_MONTHLY, APP_SUB_YEARLY, APP_SUB_OFFER_YEARLY                   // Gen 4 (Current)
     )
 
+    private val billingManager = BillingManager(this, lifecycleScope)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         initBilling()
+
+        findViewById<Button>(R.id.btn_purchase).setOnClickListener { onPurchaseClick() }
     }
 
     private fun initBilling() {
-        val billingManager = BillingManager(this, lifecycleScope)
         billingManager
             .setNonConsumables(inAppProductIdList)
             .setConsumables(emptyList())
@@ -55,27 +59,45 @@ class Asd : AppCompatActivity() {
 
     private fun fetchData(billingManager: BillingManager) {
         billingManager.fetchPurchaseHistory(object : BillingPurchaseHistoryListener {
+            override fun onError(message: String) {
+                Log.e(TAG, "fetchPurchaseHistory: Error: $message")
+            }
             override fun onSuccess(purchaseDetails: List<PurchaseDetail>) {
                 Log.d(TAG, "fetchPurchaseHistory: onSuccess: $purchaseDetails")
             }
-
-            override fun onError(message: String) {
-
-            }
         })
-        billingManager.fetchProductDetails(object : BillingProductDetailsListener {
-            override fun onSuccess(productDetails: List<ProductDetail>) {
-                Log.d(TAG, "fetchProductDetails: onSuccess: $productDetails")
 
+        billingManager.fetchProductDetails(object : BillingProductDetailsListener {
+            override fun onError(message: String) {
+                Log.e(TAG, "fetchProductDetails: Error: $message")
+            }
+            override fun onSuccess(productDetails: List<ProductDetail>) {
+                //Log.d(TAG, "fetchProductDetails: onSuccess: $productDetails")
                 productDetails.forEach {
-                    Log.d(TAG, "fetchProductDetails: onSuccess: productDetail: $it")
+                    //Log.d(TAG, "fetchProductDetails: onSuccess: productDetail: $it")
                 }
             }
+        })
 
+        billingManager.getProductDetail(APP_SUB_WEEKLY, APP_PLAN_MONTHLY, object : BillingProductDetailsListener {
             override fun onError(message: String) {
-
+                Log.e(TAG, "getProductDetail: Error: $message")
+            }
+            override fun onSuccess(productDetails: List<ProductDetail>) {
+                Log.d(TAG, "fetchProductDetail: onSuccess: $productDetails")
+                productDetails.forEach {
+                    Log.d(TAG, "fetchProductDetail: onSuccess: productDetail: $it")
+                }
             }
         })
+    }
+
+    private fun onPurchaseClick() {
+        // In-App
+        //billingManager.makeInAppPurchase(this, "test", onPurchaseListener)
+
+        // Subscription
+        //billingManager.makeSubPurchase(this, "product_abc", "plan_abc", onPurchaseListener)
     }
 
     companion object {

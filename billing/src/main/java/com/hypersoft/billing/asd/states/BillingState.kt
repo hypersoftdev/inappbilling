@@ -51,38 +51,28 @@ enum class BillingState(val message: String) {
     FETCHING_SUBSCRIPTION_PRODUCTS_FAILED("Subs -> Failed to fetch Subscription products from Google Play Console."),
     FETCHING_SUBSCRIPTION_PRODUCTS_SUCCESS("Subs -> Successfully fetched Subscription products from Google Play Console."),
 
+    // Buying (Validations)
+    ACTIVITY_REFERENCE_NOT_FOUND("Activity reference is null"),
+    CONSOLE_BUY_PRODUCT_EMPTY_ID("In-App or Subs purchase failed: Product ID must not be empty"),
+    CONSOLE_PRODUCTS_IN_APP_NOT_EXIST("InApp -> No product has been found"),
+    CONSOLE_PRODUCTS_SUB_NOT_EXIST("Subs -> No product has been found"),
 
+    // Billing Flows
+    BILLING_FLOW_LAUNCHED_SUCCESSFULLY("Billing Flow: Launched successfully via Google Play"),
+    BILLING_FLOW_USER_CANCELLED("Billing Flow: Cancelled by user"),
+    BILLING_FLOW_EXCEPTION("Billing Flow: Exception occurred while launching purchase sheet"),
+    PURCHASES_NOT_FOUND("Purchase Check: Purchase list is empty or null"),
+    PURCHASE_ALREADY_OWNED("Purchase Check: Product already owned, skipping transaction"),
+    PURCHASE_SUCCESS("Purchase Result: Transaction completed successfully"),
+    PURCHASE_FAILED("Purchase Result: Failed to complete the transaction"),
+
+
+    // Acknowledgements
     ACKNOWLEDGE_PURCHASE("Acknowledging purchases"),
     ACKNOWLEDGE_PURCHASE_SUCCESS("Successfully acknowledged purchases"),
     ACKNOWLEDGE_PURCHASE_FAILURE("Failed to acknowledged purchases"),
 
-
-
-
-    /* ------------------------------------------------------ New ------------------------------------------------------ */
-
-    ACTIVITY_REFERENCE_NOT_FOUND("Activity reference is null"),
-
-    // Connections
-
-
-    // Buying
-    CONSOLE_BUY_PRODUCT_EMPTY_ID("InApp, Subs -> Product Id can't be empty"),
-    CONSOLE_PRODUCTS_IN_APP_NOT_EXIST("InApp -> No product has been found"),
-    CONSOLE_PRODUCTS_SUB_NOT_EXIST("SUB -> No product has been found"),
-
-    // Update
-    CONSOLE_PRODUCTS_OLD_SUB_NOT_FOUND("SUB -> Old product not being able to found"),
-
-    // Billing Flows
-    LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY("Google Play Billing has been launched successfully"),
-    LAUNCHING_FLOW_INVOCATION_USER_CANCELLED("Cancelled by user"),
-    LAUNCHING_FLOW_INVOCATION_EXCEPTION_FOUND("Exception Found, launching Google billing sheet"),
-    PURCHASING_NO_PURCHASES_FOUND("No purchases found"),
-    PURCHASING_ALREADY_OWNED("Already owned this product! No need to purchase"),
-    PURCHASING_SUCCESSFULLY("Successfully Purchased"),
-    PURCHASING_FAILURE("Failed to make transaction"),
-
-    PURCHASE_CONSUME("Successfully Consumed"),
-    PURCHASE_FAILURE("Failed to consume product")
+    CONSUME_PURCHASE("Acknowledging purchases"),
+    CONSUME_PURCHASE_SUCCESS("Successfully Consumed"),
+    CONSUME_PURCHASE_FAILURE("Failed to consume product")
 }

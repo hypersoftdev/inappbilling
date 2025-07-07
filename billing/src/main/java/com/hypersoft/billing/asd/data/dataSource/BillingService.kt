@@ -1,10 +1,13 @@
 package com.hypersoft.billing.asd.data.dataSource
 
+import android.app.Activity
 import android.util.Log
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
+import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.QueryProductDetailsParams
@@ -57,7 +60,7 @@ internal class BillingService(private val billingClient: BillingClient) {
         })
     }
 
-    /* ----------------------------------- Purchases ----------------------------------- */
+    /* ------------------------------- Purchase History ------------------------------- */
 
     suspend fun queryInAppPurchases(): List<Purchase> {
         currentState = BillingState.FETCHING_INAPP_PURCHASES
@@ -133,15 +136,34 @@ internal class BillingService(private val billingClient: BillingClient) {
         return result.productDetailsList
     }
 
+    /* ----------------------------------- Purchases ----------------------------------- */
+
+    fun purchaseFlow(activity: Activity, params: BillingFlowParams) = billingClient.launchBillingFlow(activity, params)
+
+
+    /* ------------------------------- Consume Products ------------------------------- */
+
+    fun consumePurchases(purchases: List<Purchase>) {
+        purchases.forEach { purchase ->
+            val consumeParams = ConsumeParams.newBuilder().setPurchaseToken(purchase.purchaseToken).build()
+            billingClient.consumeAsync(consumeParams) { billingResult, response ->
+                when (BillingResponse(billingResult.responseCode).isOk) {
+                    true -> Log.d(TAG, "BillingService: consumePurchases: Purchases has been successfully consumed for these products: ${purchase.products}, response: $response")
+                    false -> Log.e(TAG, "BillingService: consumePurchases: Purchases has been failed to consume for these products: ${purchase.products}, response: $response")
+                }
+            }
+        }
+    }
+
     /* ------------------------------- Acknowledgements ------------------------------- */
 
     fun acknowledgePurchases(purchases: List<Purchase>) {
         purchases.forEach { purchase ->
-            val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder().setPurchaseToken(purchase.purchaseToken)
-            billingClient.acknowledgePurchase(acknowledgePurchaseParams.build()) { billingResult ->
+            val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder().setPurchaseToken(purchase.purchaseToken).build()
+            billingClient.acknowledgePurchase(acknowledgePurchaseParams) { billingResult ->
                 when (BillingResponse(billingResult.responseCode).isOk) {
-                    true -> Log.d(TAG, "BillingService: checkForAcknowledgements: Payment has been successfully acknowledged for these products: ${purchase.products}")
-                    false -> Log.e(TAG, "BillingService: checkForAcknowledgements: Payment has been failed to acknowledge for these products: ${purchase.products}")
+                    true -> Log.d(TAG, "BillingService: acknowledgePurchases: Purchases has been successfully acknowledged for these products: ${purchase.products}")
+                    false -> Log.e(TAG, "BillingService: acknowledgePurchases: Purchases has been failed to acknowledge for these products: ${purchase.products}")
                 }
             }
         }

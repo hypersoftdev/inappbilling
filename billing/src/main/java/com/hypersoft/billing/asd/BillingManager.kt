@@ -1,7 +1,10 @@
 package com.hypersoft.billing.asd
 
+import android.app.Activity
 import android.content.Context
+import android.util.Log
 import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
@@ -9,13 +12,17 @@ import com.hypersoft.billing.asd.data.dataSource.BillingService
 import com.hypersoft.billing.asd.data.repository.BillingRepository
 import com.hypersoft.billing.asd.domain.UseCaseAcknowledgePurchase
 import com.hypersoft.billing.asd.domain.UseCaseConnection
+import com.hypersoft.billing.asd.domain.UseCasePurchase
 import com.hypersoft.billing.asd.domain.UseCaseQueryProducts
 import com.hypersoft.billing.asd.domain.UseCaseQueryPurchases
 import com.hypersoft.billing.asd.extensions.setAll
 import com.hypersoft.billing.asd.interfaces.BillingConnectionListener
 import com.hypersoft.billing.asd.interfaces.BillingProductDetailsListener
 import com.hypersoft.billing.asd.interfaces.BillingPurchaseHistoryListener
+import com.hypersoft.billing.asd.interfaces.BillingPurchaseListener
+import com.hypersoft.billing.asd.states.BillingState
 import com.hypersoft.billing.asd.states.QueryResponse
+import com.hypersoft.billing.repository.BillingResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -43,14 +50,17 @@ class BillingManager(
 
     /* ▾ lazy‑built Play client ---------------------------------------------------- */
     private val purchasesUpdatedListener = PurchasesUpdatedListener { billingResult, purchases: List<Purchase>? ->
-
+        Log.d(TAG, "BillingManager: purchasesUpdatedListener: ${billingResult.responseCode} -- ${billingResult.debugMessage}")
+        purchaseUpdateListener(billingResult, purchases)
     }
 
-    private val billingClient = BillingClient.newBuilder(context.applicationContext)
-        .setListener(purchasesUpdatedListener)
-        .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
-        .enableAutoServiceReconnection()
-        .build()
+    private val billingClient by lazy {
+        BillingClient.newBuilder(context)
+            .setListener(purchasesUpdatedListener)
+            .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
+            .enableAutoServiceReconnection()
+            .build()
+    }
 
     /* ───────── Clean‑Arch stack ────────────────────────────────────────── */
     private val billingService by lazy { BillingService(billingClient) }
@@ -58,7 +68,7 @@ class BillingManager(
     private val useCaseConnection by lazy { UseCaseConnection(billingRepository) }
     private val useCaseQueryPurchases by lazy { UseCaseQueryPurchases(billingRepository) }
     private val useCaseQueryProducts by lazy { UseCaseQueryProducts(billingRepository) }
-    private val useCasePurchase by lazy { UseCaseQueryProducts(billingRepository) }
+    private val useCasePurchase by lazy { UseCasePurchase(billingRepository) }
     private val useCaseAcknowledgePurchase by lazy { UseCaseAcknowledgePurchase(billingRepository) }
 
     /* ───────── Config & listener ───────────────────────────────────────── */
@@ -75,6 +85,8 @@ class BillingManager(
     fun setConsumables(ids: List<String>) = apply { _consumables.setAll(ids) }
     fun setSubscriptions(ids: List<String>) = apply { _subscriptions.setAll(ids) }
     fun setListener(listener: BillingConnectionListener?) = apply { connectionListener = listener }
+
+    private var billingPurchaseListener: BillingPurchaseListener? = null
 
     /* ───────── Public API ──────────────────────────────────────────────── */
     fun startConnection() {
@@ -105,17 +117,67 @@ class BillingManager(
 
     /**
      * Returns a single product (optionally scoped by plan) from the in‑memory cache.
-     *
-     * If a bulk fetch is running, this call suspends until that fetch
-     *  completes, ensuring you never read a half‑built list.
+     *  @param productId: Pass the product id (inapp,subs)
+     *  @param planId: pass the plan id (if subscription only else null)
      */
-    fun fetchProductDetail(productId: String, planId: String, listener: BillingProductDetailsListener) {
+    fun getProductDetail(productId: String, planId: String?, listener: BillingProductDetailsListener) {
         scope.launch {
             when (val response = useCaseQueryProducts.queryProducts(productId, planId)) {
                 is QueryResponse.Loading -> {}
                 is QueryResponse.Success -> listener.onSuccess(response.data)
                 is QueryResponse.Error -> listener.onError(response.errorMessage)
             }
+        }
+    }
+
+    fun purchaseInApp(activity: Activity?, productId: String, listener: BillingPurchaseListener) {
+        this.billingPurchaseListener = listener
+
+        scope.launch {
+            when (val response = useCasePurchase.purchaseInApp(activity, productId)) {
+                is QueryResponse.Loading -> {}
+                is QueryResponse.Success -> {}
+                is QueryResponse.Error -> listener.onError(response.errorMessage)
+            }
+        }
+    }
+
+    fun purchaseSubs(activity: Activity?, productId: String, planId: String, listener: BillingPurchaseListener) {
+        this.billingPurchaseListener = listener
+
+        scope.launch {
+            when (val response = useCasePurchase.purchaseSubs(activity, productId, planId)) {
+                is QueryResponse.Loading -> {}
+                is QueryResponse.Success -> {}
+                is QueryResponse.Error -> listener.onError(response.errorMessage)
+            }
+        }
+    }
+
+    private fun purchaseUpdateListener(billingResult: BillingResult, purchases: List<Purchase>?) {
+        scope.launch {
+            val response = BillingResponse(billingResult.responseCode)
+            when {
+                response.isOk -> {
+                    billingService.currentState = BillingState.PURCHASE_SUCCESS
+                    billingPurchaseListener?.onPurchaseResult(BillingState.PURCHASE_SUCCESS.message)
+                    useCasePurchase.handlePurchase(purchases, consumableIds)
+                    return@launch
+                }
+
+                response.isAlreadyOwned -> {
+                    billingService.currentState = BillingState.PURCHASE_ALREADY_OWNED
+                    billingPurchaseListener?.onPurchaseResult(BillingState.PURCHASE_ALREADY_OWNED.message)
+                    useCasePurchase.handlePurchase(purchases, consumableIds)
+                    return@launch
+                }
+
+                response.isUserCancelled -> billingService.currentState = BillingState.BILLING_FLOW_USER_CANCELLED
+                response.isTerribleFailure -> billingService.currentState = BillingState.BILLING_FLOW_EXCEPTION
+                response.isRecoverableError -> billingService.currentState = BillingState.BILLING_FLOW_EXCEPTION
+                response.isNonrecoverableError -> billingService.currentState = BillingState.BILLING_FLOW_EXCEPTION
+            }
+            billingPurchaseListener?.onError(billingService.currentState.message)
         }
     }
 

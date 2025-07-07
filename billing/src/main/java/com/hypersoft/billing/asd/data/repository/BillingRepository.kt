@@ -1,5 +1,7 @@
 package com.hypersoft.billing.asd.data.repository
 
+import android.app.Activity
+import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.Purchase
 import com.hypersoft.billing.asd.data.dataSource.BillingService
 import com.hypersoft.billing.asd.states.BillingState
@@ -25,7 +27,7 @@ internal class BillingRepository(private val billingService: BillingService) {
 
     fun startConnection(onResult: (Boolean, String?) -> Unit) = billingService.startConnection(onResult)
 
-    /* ----------------------------------- Purchases ----------------------------------- */
+    /* ------------------------------- Purchase History ------------------------------- */
 
     suspend fun queryInAppPurchases() = withContext(Dispatchers.IO) {
         billingService.queryInAppPurchases()
@@ -45,8 +47,19 @@ internal class BillingRepository(private val billingService: BillingService) {
         billingService.querySubsProductDetails(productIds)
     }
 
+    /* ----------------------------------- Purchases ----------------------------------- */
+
+    suspend fun purchaseFlow(activity: Activity, params: BillingFlowParams) = withContext(Dispatchers.Main) {
+        billingService.purchaseFlow(activity, params)
+    }
+
     /* ------------------------------- Acknowledgements ------------------------------- */
 
+    suspend fun consumePurchases(list: List<Purchase>) = withContext(Dispatchers.IO) {
+        billingService.consumePurchases(list)
+    }
+
+    /* ------------------------------- Acknowledgements ------------------------------- */
     suspend fun acknowledgePurchases(list: List<Purchase>) = withContext(Dispatchers.IO) {
         billingService.acknowledgePurchases(list)
     }

@@ -13,5 +13,5 @@ import com.hypersoft.billing.asd.entities.product.ProductDetail
 
 interface BillingProductDetailsListener {
     fun onSuccess(productDetails: List<ProductDetail>)
-    fun onError(message: String)
+    fun onError(message: String) {}
 }

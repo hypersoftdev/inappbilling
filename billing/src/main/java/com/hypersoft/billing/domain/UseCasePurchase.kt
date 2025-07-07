@@ -112,6 +112,72 @@ internal class UseCasePurchase(private val repository: BillingRepository) {
         QueryResponse.Success("Billing flow launched successfully")
     }
 
+    suspend fun updateSubs(activity: Activity?, oldProductId: String, productId: String, planId: String): QueryResponse<String> = withContext(Dispatchers.Default) {
+        if (activity == null) {
+            repository.currentState = BillingState.ACTIVITY_REFERENCE_NOT_FOUND
+            return@withContext QueryResponse.Error("Activity Ref is null")
+        }
+
+        if (oldProductId.isEmpty()) {
+            repository.currentState = BillingState.CONSOLE_PRODUCTS_OLD_SUB_NOT_FOUND
+            return@withContext QueryResponse.Error("Old Product Id can't be empty")
+        }
+
+        if (productId.isEmpty()) {
+            repository.currentState = BillingState.CONSOLE_BUY_PRODUCT_EMPTY_ID
+            return@withContext QueryResponse.Error("Product Id can't be empty")
+        }
+
+        /* ─── Guard clauses ─────────────────────────── */
+        if (!repository.isBillingClientReady) {
+            repository.currentState = BillingState.CONNECTION_INVALID
+            return@withContext QueryResponse.Error("Play Billing not ready. Try again.")
+        }
+
+        val response = repository.querySubsProductDetails(listOf(productId))
+        if (response.isNullOrEmpty()) {
+            repository.currentState = BillingState.CONSOLE_PRODUCTS_SUB_NOT_EXIST
+            return@withContext QueryResponse.Error("Product Details are found")
+        }
+
+        val purchaseList = repository.querySubsPurchases()
+        val oldPurchase = purchaseList.find { it.products.any { it == oldProductId } }
+
+        if (oldPurchase == null) {
+            repository.currentState = BillingState.CONSOLE_PRODUCTS_SUB_NOT_EXIST
+            return@withContext QueryResponse.Error("Product Details are found")
+        }
+
+        val productDetails = response[0]
+        val offerToken = productDetails.subscriptionOfferDetails?.find { it.basePlanId == planId }?.offerToken
+
+        if (offerToken == null) {
+            repository.currentState = BillingState.CONSOLE_PRODUCTS_SUB_NOT_EXIST
+            return@withContext QueryResponse.Error("Product Details are found")
+        }
+
+        val productDetailsParamsList = listOf(
+            BillingFlowParams.ProductDetailsParams
+                .newBuilder()
+                .setProductDetails(productDetails)
+                .setOfferToken(offerToken)
+                .build()
+        )
+        val productUpdateParams = BillingFlowParams.SubscriptionUpdateParams.newBuilder()
+            .setOldPurchaseToken("old_purchase_token")
+            .setSubscriptionReplacementMode(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_FULL_PRICE)
+            .build()
+
+        val params = BillingFlowParams.newBuilder()
+            .setProductDetailsParamsList(productDetailsParamsList)
+            .setSubscriptionUpdateParams(productUpdateParams)
+            .build()
+
+        repository.purchaseFlow(activity, params)
+        repository.currentState = BillingState.BILLING_FLOW_LAUNCHED_SUCCESSFULLY
+        QueryResponse.Success("Billing flow launched successfully")
+    }
+
     suspend fun handlePurchase(purchases: List<Purchase>?, consumableIds: List<String>) = withContext(Dispatchers.Default) {
         if (purchases.isNullOrEmpty()) {
             repository.currentState = BillingState.PURCHASES_NOT_FOUND

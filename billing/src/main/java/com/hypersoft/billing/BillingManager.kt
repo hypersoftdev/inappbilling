@@ -153,6 +153,18 @@ class BillingManager(
         }
     }
 
+    fun updateSubs(activity: Activity?, oldProductId: String, productId: String, planId: String, listener: BillingPurchaseListener) {
+        this.billingPurchaseListener = listener
+
+        scope.launch {
+            when (val response = useCasePurchase.updateSubs(activity, oldProductId, productId, planId)) {
+                is QueryResponse.Loading -> {}
+                is QueryResponse.Success -> {}
+                is QueryResponse.Error -> listener.onError(response.errorMessage)
+            }
+        }
+    }
+
     private fun purchaseUpdateListener(billingResult: BillingResult, purchases: List<Purchase>?) {
         scope.launch {
             val response = BillingResponse(billingResult.responseCode)
@@ -176,6 +188,7 @@ class BillingManager(
                 response.isRecoverableError -> billingService.currentState = BillingState.BILLING_FLOW_EXCEPTION
                 response.isNonrecoverableError -> billingService.currentState = BillingState.BILLING_FLOW_EXCEPTION
             }
+            billingService.currentState = BillingState.PURCHASE_FAILED
             billingPurchaseListener?.onError(billingService.currentState.message)
         }
     }

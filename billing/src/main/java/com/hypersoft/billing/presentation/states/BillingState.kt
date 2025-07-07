@@ -57,6 +57,9 @@ enum class BillingState(val message: String) {
     CONSOLE_PRODUCTS_IN_APP_NOT_EXIST("InApp -> No product has been found"),
     CONSOLE_PRODUCTS_SUB_NOT_EXIST("Subs -> No product has been found"),
 
+    // Updating Subs
+    CONSOLE_PRODUCTS_OLD_SUB_NOT_FOUND("SUB -> Old product not being able to found"),
+
     // Billing Flows
     BILLING_FLOW_LAUNCHED_SUCCESSFULLY("Billing Flow: Launched successfully via Google Play"),
     BILLING_FLOW_USER_CANCELLED("Billing Flow: Cancelled by user"),
@@ -66,12 +69,12 @@ enum class BillingState(val message: String) {
     PURCHASE_SUCCESS("Purchase Result: Transaction completed successfully"),
     PURCHASE_FAILED("Purchase Result: Failed to complete the transaction"),
 
-
     // Acknowledgements
     ACKNOWLEDGE_PURCHASE("Acknowledging purchases"),
     ACKNOWLEDGE_PURCHASE_SUCCESS("Successfully acknowledged purchases"),
     ACKNOWLEDGE_PURCHASE_FAILURE("Failed to acknowledged purchases"),
 
+    // Consume Purchase
     CONSUME_PURCHASE("Acknowledging purchases"),
     CONSUME_PURCHASE_SUCCESS("Successfully Consumed"),
     CONSUME_PURCHASE_FAILURE("Failed to consume product")

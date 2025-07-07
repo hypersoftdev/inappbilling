@@ -6,11 +6,11 @@ import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.hypersoft.billing.asd.BillingManager
-import com.hypersoft.billing.asd.entities.PurchaseDetail
-import com.hypersoft.billing.asd.entities.product.ProductDetail
-import com.hypersoft.billing.asd.interfaces.BillingConnectionListener
-import com.hypersoft.billing.asd.interfaces.BillingProductDetailsListener
-import com.hypersoft.billing.asd.interfaces.BillingPurchaseHistoryListener
+import com.hypersoft.billing.asd.data.entities.purchase.PurchaseDetail
+import com.hypersoft.billing.asd.data.entities.product.ProductDetail
+import com.hypersoft.billing.asd.presentation.interfaces.BillingConnectionListener
+import com.hypersoft.billing.asd.presentation.interfaces.BillingProductDetailsListener
+import com.hypersoft.billing.asd.presentation.interfaces.BillingPurchaseHistoryListener
 
 /**
  * Created by: Sohaib Ahmed

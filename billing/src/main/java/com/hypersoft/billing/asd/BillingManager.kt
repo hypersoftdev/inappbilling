@@ -10,7 +10,6 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.hypersoft.billing.asd.data.dataSource.BillingService
 import com.hypersoft.billing.asd.data.repository.BillingRepository
-import com.hypersoft.billing.asd.domain.UseCaseAcknowledgePurchase
 import com.hypersoft.billing.asd.domain.UseCaseConnection
 import com.hypersoft.billing.asd.domain.UseCasePurchase
 import com.hypersoft.billing.asd.domain.UseCaseQueryProducts
@@ -69,7 +68,6 @@ class BillingManager(
     private val useCaseQueryPurchases by lazy { UseCaseQueryPurchases(billingRepository) }
     private val useCaseQueryProducts by lazy { UseCaseQueryProducts(billingRepository) }
     private val useCasePurchase by lazy { UseCasePurchase(billingRepository) }
-    private val useCaseAcknowledgePurchase by lazy { UseCaseAcknowledgePurchase(billingRepository) }
 
     /* ───────── Config & listener ───────────────────────────────────────── */
     private val _nonConsumables = mutableListOf<String>()

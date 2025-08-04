@@ -38,42 +38,41 @@ Initialize the **BillingManager** with the application `context`:
 private val billingManager by lazy { BillingManager(context) }
 ```
 
-### Step 2: Establish Billing Connection
+> **Cool Tip 💡**
+> You can now pass your `viewModelScope` or `lifecycleScope` to keep it lifecycle-aware. Default fallback: internal `SupervisorJob + Main Dispatcher`.
 
-Retrieve a debugging ID for testing and ensure the `purchaseDetailList` parameter contains all active purchases and their details:
+### Step 2: Setup Product Lists & Listeners
 
 ```
-val subsProductIdList = listOf("subs_product_id_1", "subs_product_id_2", "subs_product_id_3")
-
-val productInAppConsumable = when (BuildConfig.DEBUG) {
-    true -> listOf("product_id_1")
-    false -> listOf("product_id_1", "product_id_2")
-}
-val productInAppNonConsumable = when (BuildConfig.DEBUG) {
-    true -> listOf(billingManager.getDebugProductIDList())
-    false -> listOf("product_id_1", "product_id_2")
-}
-
-billingManager.initialize(
-    productInAppConsumable = productInAppConsumable,
-    productInAppNonConsumable = productInAppNonConsumable,
-    productSubscriptions = subsProductIdList,
-    billingListener = object : BillingListener {
-        override fun onConnectionResult(isSuccess: Boolean, message: String) {
-            Log.d("BillingTAG", "Billing: initBilling: onConnectionResult: isSuccess = $isSuccess - message = $message")
+billingManager
+    .setNonConsumables(listOf("inapp_nonconsumable_1"))
+    .setConsumables(listOf("inapp_consumable_1", "inapp_consumable_2"))
+    .setSubscriptions(listOf("subs_id_1", "subs_id_2"))
+    .setListener(object : BillingConnectionListener {
+        override fun onBillingClientConnected(isSuccess: Boolean, message: String) {
+            Log.d("BillingTAG", "Connected: $isSuccess - $message")
         }
-    
-        override fun purchasesResult(purchaseDetailList: List<PurchaseDetail>) {
-            if (purchaseDetailList.isEmpty()) {
-                // No purchase found, reset all sharedPreferences (premium properties)
-            }
-            purchaseDetailList.forEachIndexed { index, purchaseDetail ->
-                Log.d("BillingTAG", "Billing: initBilling: purchasesResult: $index) $purchaseDetail ")
-            }
-        }
+    })
+```
+
+Then, establish the connection:
+
+```
+billingManager.startConnection()
+```
+
+### Step 3: Fetch Purchase History
+
+```
+billingManager.fetchPurchaseHistory(object : BillingPurchaseHistoryListener {
+    override fun onSuccess(purchaseList: List<PurchaseDetail>) {
+        // Loop through purchases
     }
-)
 
+    override fun onError(errorMessage: String) {
+        // Handle error
+    }
+})
 ```
 
 Access comprehensive details of the currently purchased item using the `PurchaseDetail` class:
@@ -109,31 +108,42 @@ data class PurchaseDetail(
 Monitor all active in-app and subscription products:
 
 ```
-val subsProductIdList = listOf("subs_product_id_1", "subs_product_id_2", "subs_product_id_3")
-val subsPlanIdList = listOf("subs-plan-id-1", "subs-plan-id-2", "subs-plan-id-3")
-
-billingManager.productDetailsLiveData.observe(viewLifecycleOwner) { productDetailList ->
-    Log.d("BillingTAG", "Billing: initObservers: $productDetailList")
-
-    productDetailList.forEach { productDetail ->
-        if (productDetail.productType == ProductType.inapp) {
-            when (productDetail.productId) {
-                "inapp_product_id_1" -> { /* Handle in-app product 1 */ }
-                "inapp_product_id_2" -> { /* Handle in-app product 2 */ }
-            }
-        } else {
-            when (productDetail.productId) {
-                "subs_product_id_1" -> if (productDetail.planId == "subs-plan-id-1") {
-                   val freeTrial = productDetail.pricingDetails.find { it.recurringMode == RecurringMode.FREE }
-                   val discounted = productDetail.pricingDetails.find { it.recurringMode == RecurringMode.DISCOUNTED }
-                   val original = productDetail.pricingDetails.find { it.recurringMode == RecurringMode.ORIGINAL }
-                 }
-                "subs_product_id_2" -> if (productDetail.planId == "subs-plan-id-2") { /* Handle plan2 subscription */ }
-                "subs_product_id_3" -> if (productDetail.planId == "subs-plan-id-3") { /* Handle plan3 subscription */ }
+billingManager.fetchProductDetails(object : BillingProductDetailsListener {
+    override fun onSuccess(productDetailList: List<ProductDetail>) {
+        productDetailList.forEach { productDetail ->
+            Log.d("BillingTAG", "Fetched: $it")
+              if (productDetail.productType == ProductType.inapp) {
+                when (productDetail.productId) {
+                    "inapp_product_id_1" -> { /* Handle in-app product 1 */ }
+                    "inapp_product_id_2" -> { /* Handle in-app product 2 */ }
+                }
+            } else {
+                when (productDetail.productId) {
+                    "subs_product_id_1" -> if (productDetail.planId == "subs-plan-id-1") {
+                       val freeTrial = productDetail.pricingDetails.find { it.recurringMode == RecurringMode.FREE }
+                       val discounted = productDetail.pricingDetails.find { it.recurringMode == RecurringMode.DISCOUNTED }
+                       val original = productDetail.pricingDetails.find { it.recurringMode == RecurringMode.ORIGINAL }
+                     }
+                    "subs_product_id_2" -> if (productDetail.planId == "subs-plan-id-2") { /* Handle plan2 subscription */ }
+                    "subs_product_id_3" -> if (productDetail.planId == "subs-plan-id-3") { /* Handle plan3 subscription */ }
+                }
             }
         }
     }
-}
+
+    override fun onError(errorMessage: String) {
+        Log.e("BillingTAG", "Error: $errorMessage")
+    }
+})
+```
+
+Or query a specific product:
+
+```kotlin
+billingManager.getProductDetail("subs_id_1", "plan_id_1", object : BillingProductDetailsListener {
+    override fun onSuccess(productList: List<ProductDetail>) { /* handle product */ }
+    override fun onError(errorMessage: String) {}
+})
 ```
 
 Retrieve comprehensive details of the item using the `ProductDetail` class:
@@ -205,59 +215,46 @@ data class PricingPhase(
 
 ### Step 4: Make Purchases
 
-#### Purchasing In-App Products
+#### Purchasing In-App Products (one time)
 
 ```
-billingManager.makeInAppPurchase(activity, productId, object : OnPurchaseListener {
-    override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
-        Log.d("BillingTAG", "makeInAppPurchase: $isPurchaseSuccess - $message")
+billingManager.purchaseInApp(activity, "inapp_consumable_1", object : BillingPurchaseListener {
+    override fun onPurchaseResult(message: String) {
+        Log.d("BillingTAG", "InApp Result: $message")
     }
-})
 
+    override fun onError(errorMessage: String) {}
+})
 ```
 
 #### Purchasing Subscriptions
 
 ```
-  billingManager.makeSubPurchase(activity,
-                    productId = "subs_product_id_1,
-                    planId = "subs-plan-id-1,
-                    object : OnPurchaseListener {
-                        override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
-                            Log.d("BillingTAG", "makeSubPurchase: $isPurchaseSuccess - $message")
-                        }
-                    })
+billingManager.purchaseSubs(activity, "subs_id_1", "plan_id_1", object : BillingPurchaseListener {
+    override fun onPurchaseResult(message: String) {
+        Log.d("BillingTAG", "Subs Result: $message")
+    }
 
+    override fun onError(errorMessage: String) {}
+})
 ```
 
 #### Updating Subscriptions
 
 ```
-billingManager.updateSubPurchase(
+billingManager.updateSubs(
     activity,
-    oldProductId = "subs_product_id_1",
-    oldPlanId = "subs_plan_id_1",
-    productId = "subs_product_id_2",
-    planId = "subs_plan_id_2",
-    object : OnPurchaseListener {
-        override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
-            Log.d("BillingTAG", "updateSubPurchase: $isPurchaseSuccess - $message")
+    oldProductId = "subs_id_old",
+    productId = "subs_id_new",
+    planId = "plan_id_new",
+    object : BillingPurchaseListener {
+        override fun onPurchaseResult(message: String) {
+            Log.d("BillingTAG", "Subs Update: $message")
         }
+
+        override fun onError(errorMessage: String) {}
     }
 )
-
-billingManager.updateSubPurchase(
-                    activity,
-                    oldProductId = "mOldProductID",
-                    productId = "New Product ID",
-                    planId = "New Plan ID",
-                    object : OnPurchaseListener {
-                        override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
-                      Log.d("BillingTAG", "updateSubPurchase: $isPurchaseSuccess - $message")
-                        }
-                    }
-                )
-
 ```
 
 ## Guidance

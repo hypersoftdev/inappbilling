@@ -19,8 +19,8 @@ import kotlinx.coroutines.withContext
 
 internal class BillingRepository(private val billingService: BillingService) {
 
-    val isBillingClientReady = billingService.isBillingClientReady
-    var currentState: BillingState = billingService.currentState
+    val isBillingClientReady get() =  billingService.isBillingClientReady
+    var currentState: BillingState get() = billingService.currentState
         internal set(value) {
             billingService.currentState = value
         }

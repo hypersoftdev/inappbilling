@@ -32,7 +32,7 @@ internal class BillingService(private val billingClient: BillingClient) {
     private val inApp = BillingClient.ProductType.INAPP
     private val subs = BillingClient.ProductType.SUBS
 
-    val isBillingClientReady = billingClient.isReady
+    val isBillingClientReady get() = billingClient.isReady
 
     var currentState: BillingState = BillingState.NONE
         internal set(value) {

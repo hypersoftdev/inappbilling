@@ -85,7 +85,7 @@ class MainActivity : AppCompatActivity() {
 
             override fun onSuccess(productDetails: List<ProductDetail>) {
                 Log.d(TAG, "fetchProductDetails: onSuccess: $productDetails")
-                productDetails.forEach {
+                productDetails.forEach { _ ->
                     //Log.d(TAG, "fetchProductDetails: onSuccess: productDetail: $it")
                 }
             }

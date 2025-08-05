@@ -8,8 +8,7 @@ android {
     compileSdk 35
 
     defaultConfig {
-        //applicationId "com.hypersoft.inappbilling"
-        applicationId "com.allvideodownloader.video.downloader.savevideos.allinone"
+        applicationId "com.hypersoft.inappbilling"
         minSdk 23
         targetSdk 35
         versionCode = 1

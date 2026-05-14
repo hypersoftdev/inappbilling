@@ -1,6 +1,10 @@
 plugins {
     id 'com.android.library'
+    id 'maven-publish'
 }
+
+group = findProperty('group') ?: 'com.hypersoft.billing'
+version = findProperty('version') ?: '1.0-SNAPSHOT'
 
 android {
     namespace 'com.hypersoft.billing'
@@ -19,6 +23,24 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+    }
+    publishing {
+        singleVariant('release') {
+            withSourcesJar()
+        }
+    }
+}
+
+publishing {
+    publications {
+        release(MavenPublication) {
+            groupId = project.group
+            artifactId = rootProject.name
+            version = project.version
+            afterEvaluate {
+                from components.release
+            }
+        }
     }
 }
 

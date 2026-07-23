@@ -1,0 +1,36 @@
+[versions]
+agp = "9.3.0"
+kotlin = "2.3.20"
+
+# Dependencies
+coreKtx = "1.19.0"
+appcompat = "1.7.1"
+lifecycleRuntimeKtx = "2.11.0"
+material = "1.14.0"
+constraintlayout = "2.2.1"
+
+# Google Play Billing
+billingKtx = "9.1.0"
+
+# Coroutines
+coroutinesAndroid = "1.11.0"
+
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+
+[libraries]
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+
+# Lifecycle
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+
+# Google Play Billing
+billing-ktx = { group = "com.android.billingclient", name = "billing-ktx", version.ref = "billingKtx" }
+
+# Coroutines
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutinesAndroid" }

@@ -2,124 +2,74 @@ package com.hypersoft.inappbilling
 
 import android.os.Bundle
 import android.util.Log
-import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.google.android.material.button.MaterialButton
 import com.hypersoft.billing.BillingManager
-import com.hypersoft.billing.data.entities.product.ProductDetail
-import com.hypersoft.billing.data.entities.purchase.PurchaseDetail
-import com.hypersoft.billing.presentation.interfaces.BillingConnectionListener
-import com.hypersoft.billing.presentation.interfaces.BillingProductDetailsListener
-import com.hypersoft.billing.presentation.interfaces.BillingPurchaseHistoryListener
-import com.hypersoft.billing.presentation.interfaces.BillingPurchaseListener
+import com.hypersoft.billing.model.PurchaseOutcome
+import com.hypersoft.billing.model.UiState
+import kotlinx.coroutines.launch
 
 const val TAG = "MyTag"
 
 class MainActivity : AppCompatActivity() {
 
-    private val billingManager by lazy { BillingManager(this) }
+    // BillingManager is an app-lifetime singleton owned by InAppBillingApplication, not created per-Activity.
+    private val billingManager: BillingManager by lazy { (application as InAppBillingApplication).billingManager }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        initBilling()
+        observeBilling()
 
-        findViewById<Button>(R.id.btn_purchase).setOnClickListener { onPurchaseClick() }
+        findViewById<MaterialButton>(R.id.mbPurchase).setOnClickListener { onPurchaseClick() }
     }
 
-    /* -------------------------------------------------- Way -------------------------------------------------- */
-
-    /**
-     *  Suppose there's been a subscription structure as follow: - ProductID, -- PlanID
-     *   - Bronze
-     *      -- Weekly
-     *      -- Monthly
-     *      -- Quarterly (3 Months)
-     *      -- Yearly
-     *   - Silver
-     *      -- Weekly
-     *      -- Monthly
-     *      -- Quarterly (3 Months)
-     *      -- Yearly
-     *   - Gold
-     *      -- Weekly
-     *      -- Monthly
-     *      -- Quarterly (3 Months)
-     *      -- Yearly
-     *   - Platinum
-     *      -- Weekly
-     *      -- Monthly
-     *      -- Quarterly (3 Months)
-     *      -- Yearly
-     */
-
-    private fun initBilling() {
-        billingManager
-            .setNonConsumables(emptyList())
-            .setConsumables(emptyList())
-            .setSubscriptions(emptyList())
-            .setListener(object : BillingConnectionListener {
-                override fun onBillingClientConnected(isSuccess: Boolean, message: String) {
-                    Log.d(TAG, "onBillingClientConnected: isSuccess: $isSuccess, message: $message")
-                    fetchData(billingManager)
-                }
-            })
-            .startConnection()
-    }
-
-    private fun fetchData(billingManager: BillingManager) {
-        billingManager.fetchPurchaseHistory(object : BillingPurchaseHistoryListener {
-            override fun onError(message: String) {
-                Log.e(TAG, "fetchPurchaseHistory: Error: $message")
-            }
-
-            override fun onSuccess(purchaseDetails: List<PurchaseDetail>) {
-                Log.d(TAG, "fetchPurchaseHistory: onSuccess: $purchaseDetails")
-            }
-        })
-
-        billingManager.fetchProductDetails(object : BillingProductDetailsListener {
-            override fun onError(message: String) {
-                Log.e(TAG, "fetchProductDetails: Error: $message")
-            }
-
-            override fun onSuccess(productDetails: List<ProductDetail>) {
-                Log.d(TAG, "fetchProductDetails: onSuccess: $productDetails")
-                productDetails.forEach { _ ->
-                    //Log.d(TAG, "fetchProductDetails: onSuccess: productDetail: $it")
+    private fun observeBilling() {
+        // Connection was already kicked off in InAppBillingApplication.onCreate(); productsState/purchasesState
+        // refresh automatically once it succeeds, so screens only ever need to collect them.
+        lifecycleScope.launch {
+            billingManager.productsState.collect { state ->
+                when (state) {
+                    is UiState.Loading -> Log.d(TAG, "productsState: loading")
+                    is UiState.Success -> Log.d(TAG, "productsState: ${state.data}") // render paywall prices from here
+                    is UiState.Error -> Log.e(TAG, "productsState: ${state.message} (${state.responseCode})")
                 }
             }
-        })
+        }
 
-        billingManager.getProductDetail("", "", object : BillingProductDetailsListener {
-            override fun onError(message: String) {
-                Log.e(TAG, "getProductDetail: Error: $message")
-            }
-
-            override fun onSuccess(productDetails: List<ProductDetail>) {
-                Log.d(TAG, "fetchProductDetail: onSuccess: $productDetails")
-                productDetails.forEach {
-                    Log.d(TAG, "fetchProductDetail: onSuccess: productDetail: $it")
+        lifecycleScope.launch {
+            billingManager.purchasesState.collect { state ->
+                when (state) {
+                    is UiState.Loading -> Log.d(TAG, "purchasesState: loading")
+                    is UiState.Success -> Log.d(TAG, "purchasesState: ${state.data}") // derive premium status from here
+                    is UiState.Error -> Log.e(TAG, "purchasesState: ${state.message} (${state.responseCode})")
                 }
             }
-        })
+        }
+
+        // Purchases that settle outside a direct purchaseXxx() call (e.g. resumed after app restart)
+        lifecycleScope.launch {
+            billingManager.purchaseUpdates.collect { outcome ->
+                Log.d(TAG, "purchaseUpdates: $outcome")
+            }
+        }
     }
 
     private fun onPurchaseClick() {
-        // In-App
-        billingManager.purchaseInApp(this, "android.test.purchased", purchaseListener)
+        lifecycleScope.launch {
+            // In-App
+            when (val outcome = billingManager.purchaseInApp(this@MainActivity, "android.test.purchased")) {
+                is PurchaseOutcome.Success -> Log.d(TAG, "purchaseInApp: success: ${outcome.message}")
+                is PurchaseOutcome.AlreadyOwned -> Log.d(TAG, "purchaseInApp: already owned")
+                is PurchaseOutcome.UserCancelled -> Log.d(TAG, "purchaseInApp: cancelled by user")
+                is PurchaseOutcome.Failed -> Log.e(TAG, "purchaseInApp: failed: ${outcome.message} (${outcome.responseCode})")
+            }
 
-        // Subscription
-        //billingManager.purchaseSubs(this, APP_SUB_WEEKLY, SUB_PLAN_WEEKLY, purchaseListener)
-    }
-
-    private val purchaseListener = object : BillingPurchaseListener {
-        override fun onPurchaseResult(message: String) {
-            Log.d(TAG, "purchaseListener: onPurchaseResult: message: $message")
-        }
-
-        override fun onError(message: String) {
-            Log.e(TAG, "purchaseListener: onError: message: $message")
+            // Subscription (offerId is optional — omit it to get the plan's default offer,
+            // or pass one to target a specific promo/free-trial offer, e.g. from productsState)
+            //billingManager.purchaseSubs(this@MainActivity, APP_SUB_WEEKLY, SUB_PLAN_WEEKLY)
         }
     }
 }

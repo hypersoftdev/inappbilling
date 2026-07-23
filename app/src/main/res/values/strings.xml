@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">inappbilling</string>
+    <string name="app_name">Google Play Billing</string>
+
+    <string name="purchase">Purchase</string>
 </resources>

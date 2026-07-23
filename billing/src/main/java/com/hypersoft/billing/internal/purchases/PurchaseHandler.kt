@@ -57,14 +57,16 @@ internal class PurchaseHandler(
     private val _purchaseUpdates = MutableSharedFlow<PurchaseOutcome>(extraBufferCapacity = 1)
     val purchaseUpdates: SharedFlow<PurchaseOutcome> = _purchaseUpdates.asSharedFlow()
 
-    suspend fun purchaseInApp(activity: Activity, productId: String): PurchaseOutcome {
+    suspend fun purchaseInApp(activity: Activity, productId: String, offerId: String? = null): PurchaseOutcome {
         if (productId.isEmpty()) return PurchaseOutcome.Failed("Product Id can't be empty", BillingClient.BillingResponseCode.DEVELOPER_ERROR)
         if (!billingClient.isReady) return PurchaseOutcome.Failed("Play Billing not ready. Try again.", BillingClient.BillingResponseCode.SERVICE_DISCONNECTED)
 
         val details = productRepository.queryInAppProductDetails(listOf(productId)).firstOrNull()
             ?: return PurchaseOutcome.Failed("No in-app product found for id: $productId", BillingClient.BillingResponseCode.ITEM_UNAVAILABLE)
+        val offerToken = details.findOneTimeOfferToken(offerId)
+            ?: return PurchaseOutcome.Failed("No offer found for productId: $productId" + (offerId?.let { ", offerId: $it" }.orEmpty()), BillingClient.BillingResponseCode.ITEM_UNAVAILABLE)
 
-        val productDetailsParamsList = listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(details).build())
+        val productDetailsParamsList = listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(details).setOfferToken(offerToken).build())
         val params = BillingFlowParams.newBuilder().setProductDetailsParamsList(productDetailsParamsList).build()
         return launchAndAwait(activity, params)
     }
@@ -181,6 +183,18 @@ internal class PurchaseHandler(
      */
     private fun ProductDetails.findOfferToken(planId: String, offerId: String?): String? {
         val offers = subscriptionOfferDetails?.filter { it.basePlanId == planId } ?: return null
+        return when (offerId) {
+            null -> offers.firstOrNull { it.offerId == null } ?: offers.firstOrNull()
+            else -> offers.firstOrNull { it.offerId == offerId }
+        }?.offerToken
+    }
+
+    /**
+     * @param offerId When null, prefers the product's default purchase option (Play's `offerId == null`),
+     *   falling back to whichever offer is available. When non-null, matches that specific offer exactly.
+     */
+    private fun ProductDetails.findOneTimeOfferToken(offerId: String?): String? {
+        val offers = oneTimePurchaseOfferDetailsList ?: return null
         return when (offerId) {
             null -> offers.firstOrNull { it.offerId == null } ?: offers.firstOrNull()
             else -> offers.firstOrNull { it.offerId == offerId }

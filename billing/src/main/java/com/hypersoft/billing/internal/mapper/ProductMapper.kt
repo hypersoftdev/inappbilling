@@ -22,25 +22,32 @@ import com.hypersoft.billing.model.RecurringMode
  */
 internal object ProductMapper {
 
-    fun toOneTimeProduct(details: ProductDetails): ProductDetail = ProductDetail(
-        productId = details.productId,
-        planId = "",
-        offerId = "",
-        productTitle = details.title,
-        productType = ProductType.inapp,
-        pricingDetails = listOf(
-            PricingPhase(
-                recurringMode = RecurringMode.ORIGINAL,
-                price = details.oneTimePurchaseOfferDetails?.formattedPrice.clean(),
-                currencyCode = details.oneTimePurchaseOfferDetails?.priceCurrencyCode.orEmpty(),
-                planTitle = "",
-                billingCycleCount = 0,
-                billingPeriod = "",
-                priceAmountMicros = details.oneTimePurchaseOfferDetails?.priceAmountMicros ?: 0L,
-                freeTrialPeriod = 0
+    /**
+     * A one-time product can carry multiple purchase options (default price, a time-limited
+     * discount, a preorder, a rental, etc.) — Play only returns the ones the current user is
+     * eligible for. Each one becomes its own [ProductDetail], distinguished by [ProductDetail.offerId].
+     */
+    fun toOneTimeProducts(details: ProductDetails): List<ProductDetail> = details.oneTimePurchaseOfferDetailsList?.map { offer ->
+        ProductDetail(
+            productId = details.productId,
+            planId = "",
+            offerId = offer.offerId.orEmpty(),
+            productTitle = details.title,
+            productType = ProductType.inapp,
+            pricingDetails = listOf(
+                PricingPhase(
+                    recurringMode = if (offer.fullPriceMicros != null) RecurringMode.DISCOUNTED else RecurringMode.ORIGINAL,
+                    price = offer.formattedPrice.clean(),
+                    currencyCode = offer.priceCurrencyCode,
+                    planTitle = "",
+                    billingCycleCount = 0,
+                    billingPeriod = "",
+                    priceAmountMicros = offer.priceAmountMicros,
+                    freeTrialPeriod = 0
+                )
             )
         )
-    )
+    }.orEmpty()
 
     /**
      * A base plan can carry multiple concurrent offers (default price, a free-trial offer, a

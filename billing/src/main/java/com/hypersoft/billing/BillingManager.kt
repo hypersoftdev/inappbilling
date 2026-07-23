@@ -157,7 +157,8 @@ class BillingManager(context: Context) {
      */
     suspend fun getProductDetail(productId: String, planId: String? = null, offerId: String? = null): Result<ProductDetail> = productRepository.find(productId, planId, offerId)
 
-    suspend fun purchaseInApp(activity: Activity, productId: String): PurchaseOutcome = purchaseHandler.purchaseInApp(activity, productId)
+    /** @param offerId See [getProductDetail]. */
+    suspend fun purchaseInApp(activity: Activity, productId: String, offerId: String? = null): PurchaseOutcome = purchaseHandler.purchaseInApp(activity, productId, offerId)
 
     /** @param offerId See [getProductDetail]. */
     suspend fun purchaseSubs(activity: Activity, productId: String, planId: String, offerId: String? = null): PurchaseOutcome = purchaseHandler.purchaseSubs(activity, productId, planId, offerId)

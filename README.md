@@ -168,13 +168,19 @@ lifecycleScope.launch {
 }
 ```
 
-**Multiple offers on the same plan (free trials, event discounts, winback offers):** a base plan can carry several concurrent offers in the Play Console — a default price, a free-trial offer, a time-limited "Christmas Sale" discount, a winback offer for lapsed subscribers, etc. Play only ever returns the ones the *current user* is eligible for. Each eligible offer shows up as its own `ProductDetail` entry sharing the same `productId`/`planId` but a distinct `offerId`, so filter `productsState`'s list by `offerId` to find promotional entries:
+**Multiple offers on the same product (free trials, event discounts, winback offers):** this applies to **both** subscriptions and one-time products. A subscription base plan — or a one-time product — can carry several concurrent purchase options in the Play Console: a default price, a free-trial offer, a time-limited "Christmas Sale" discount, a winback offer for lapsed subscribers, etc. Play only ever returns the ones the *current user* is eligible for. Each eligible offer shows up as its own `ProductDetail` entry sharing the same `productId` (and `planId`, for subscriptions) but a distinct `offerId`, so filter `productsState`'s list by `offerId` to find promotional entries:
 
 ```kotlin
-val promoOffers = productDetailList.filter { it.productId == "subs_id_1" && it.planId == "plan-id-1" && it.offerId.isNotEmpty() }
+// Subscription promo offers on a given plan
+val subsPromoOffers = productDetailList.filter { it.productId == "subs_id_1" && it.planId == "plan-id-1" && it.offerId.isNotEmpty() }
+
+// One-time product discount offers (e.g. a Christmas sale on a non-consumable)
+val inAppPromoOffers = productDetailList.filter { it.productId == "inapp_nonconsumable_1" && it.offerId.isNotEmpty() }
 ```
 
-`getProductDetail(productId, planId, offerId)` — pass `offerId = null` (the default) for the plan's default offer, or a specific `offerId` to target one particular promo.
+For a discounted offer, `pricingDetails` reflects `RecurringMode.DISCOUNTED` (vs. `ORIGINAL` for the default price) so you can badge it in the UI the same way for one-time products as for subscription phases.
+
+`getProductDetail(productId, planId, offerId)` — pass `offerId = null` (the default) for the product's default offer, or a specific `offerId` to target one particular promo. Same semantics apply to `purchaseInApp`/`purchaseSubs`/`updateSubs` below.
 
 Retrieve comprehensive details of the item using the `ProductDetail` class:
 
@@ -242,9 +248,11 @@ After a `Success`/`AlreadyOwned` result, `purchasesState` has already been refre
 
 #### Purchasing In-App Products (one time)
 
+`offerId` is optional here too — omit it for the product's default price, or pass one to purchase a specific discount/promo offer (see [Multiple offers on the same product](#step-3-preload-prices-for-a-paywall-shown-later) above):
+
 ```kotlin
 lifecycleScope.launch {
-    when (val outcome = billingManager.purchaseInApp(activity, "inapp_consumable_1")) {
+    when (val outcome = billingManager.purchaseInApp(activity, "inapp_consumable_1", offerId = "christmas-sale-2026")) {
         is PurchaseOutcome.Success -> Log.d("BillingTAG", "InApp Result: ${outcome.message}")
         is PurchaseOutcome.AlreadyOwned -> { /* already owned */ }
         is PurchaseOutcome.UserCancelled -> { /* user backed out */ }
@@ -358,9 +366,9 @@ Version 4.0.0 removes the listener interfaces in favor of `suspend fun`s, `State
 | `fetchPurchaseHistory(BillingPurchaseHistoryListener)` | Collect `purchasesState: StateFlow<UiState<List<PurchaseDetail>>>` (auto-refreshed); `refreshPurchases()` to force a re-fetch |
 | `fetchProductDetails(BillingProductDetailsListener)` | Collect `productsState: StateFlow<UiState<List<ProductDetail>>>` (auto-refreshed); `refreshProducts()` to force a re-fetch |
 | `getProductDetail(id, planId, BillingProductDetailsListener)` | `getProductDetail(id, planId, offerId = null): Result<ProductDetail>` (suspend) |
-| `purchaseInApp/purchaseSubs/updateSubs(..., BillingPurchaseListener)` | Same names, now `suspend fun` returning `PurchaseOutcome`; `purchaseSubs`/`updateSubs` gained an optional `offerId` param for multi-offer plans |
+| `purchaseInApp/purchaseSubs/updateSubs(..., BillingPurchaseListener)` | Same names, now `suspend fun` returning `PurchaseOutcome`; all three gained an optional `offerId` param for multi-offer products/plans |
 | N/A | `purchaseUpdates: SharedFlow<PurchaseOutcome>` for purchases that settle outside a direct call |
-| N/A | `ProductDetail.offerId` — distinguishes multiple concurrent offers (free trial, event discount, winback, ...) on the same plan |
+| N/A | `ProductDetail.offerId` — distinguishes multiple concurrent offers (free trial, event discount, winback, ...) on the same product/plan, for both one-time products and subscriptions |
 
 # LICENSE
 

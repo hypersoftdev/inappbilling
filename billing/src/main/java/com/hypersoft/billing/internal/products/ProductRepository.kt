@@ -53,8 +53,8 @@ internal class ProductRepository(
                     val inAppCon = inAppConDeferred?.await().orEmpty()
                     val subsResult = subsDeferred?.await().orEmpty()
 
-                    inAppNon.map { ProductMapper.toOneTimeProduct(it) } +
-                        inAppCon.map { ProductMapper.toOneTimeProduct(it) } +
+                    inAppNon.flatMap { ProductMapper.toOneTimeProducts(it) } +
+                        inAppCon.flatMap { ProductMapper.toOneTimeProducts(it) } +
                         subsResult.flatMap { ProductMapper.toSubscriptionProducts(it) }
                 }.fold(
                     onSuccess = {

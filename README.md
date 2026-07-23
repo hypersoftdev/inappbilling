@@ -55,7 +55,28 @@ class MyApplication : Application() {
 }
 ```
 
-On a successful `connect()`, `productsState` and `purchasesState` (below) refresh **automatically** in the background — there's no separate "now fetch products/purchases" step to remember. `billingManager.connectionState: StateFlow<ConnectionState>` is also available if you want to observe connection changes over time (e.g. reconnects).
+On a successful `connect()`, `productsState` and `purchasesState` (below) refresh **automatically** in the background — there's no separate "now fetch products/purchases" step to remember.
+
+### Reading `connectionState`
+
+`connect()`'s return value is a one-shot snapshot — useful right after you call it, but it won't tell you if the connection later drops and (with `enableAutoServiceReconnection()` always on internally) reconnects. For that, collect `connectionState: StateFlow<ConnectionState>` instead:
+
+```kotlin
+lifecycleScope.launch {
+    billingManager.connectionState.collect { state ->
+        when (state) {
+            ConnectionState.DISCONNECTED -> { /* not connected yet, or the connection dropped */ }
+            ConnectionState.CONNECTING -> { /* connection attempt in progress */ }
+            ConnectionState.CONNECTED -> { /* ready — safe to call purchaseXxx()/refreshXxx() */ }
+        }
+    }
+}
+```
+
+A few things worth knowing about it:
+- It's a `StateFlow`, so any new collector immediately gets the current state, then every change after that — you don't need to call `connect()` again just to start observing.
+- Gate purchase buttons on `connectionState == CONNECTED` (or `UiState` from `productsState`/`purchasesState`, which can only reach `Success` once connected) rather than assuming `connect()` having returned once means the connection stays up forever.
+- This is purely about the *connection*, not your data — `productsState`/`purchasesState` staying on `Loading` while `connectionState` is `CONNECTING` is expected; they refresh once `connectionState` reaches `CONNECTED`.
 
 ### Step 2: Check premium status as early as possible
 
